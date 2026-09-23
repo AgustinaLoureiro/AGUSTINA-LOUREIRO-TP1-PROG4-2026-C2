@@ -1,0 +1,42 @@
+<header class="topbar">
+  <div class="topbar__brand">
+    <img src="/marca/isotipo.svg" alt="Cinecorn" class="topbar__mark" />
+    <span class="topbar__name">CINECORN</span>
+  </div>
+  <nav class="topbar__nav">
+    <a routerLink="/register" class="topbar__link">Crear cuenta</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <img
+    src="/marca/logotipo.png"
+    alt="Cinecorn — No es solo un cine, es el plan perfecto"
+    class="hero__marquee"
+  />
+
+  <div class="hero__search">
+    <input
+      type="search"
+      placeholder="Buscar película..."
+      [value]="busqueda()"
+      (input)="busqueda.set($any($event.target).value)"
+    />
+    <button type="button">Buscar</button>
+  </div>
+</section>
+
+<section class="cartelera">
+  <h2>En cartelera</h2>
+  <div class="cartelera__grid">
+    @for (peli of peliculas; track peli.id) {
+      <article class="poster">
+        <div class="poster__img" [style.background]="peli.color"></div>
+        <div class="poster__info">
+          <h3>{{ peli.titulo }}</h3>
+          <span>{{ peli.genero }}</span>
+        </div>
+      </article>
+    }
+  </div>
+</section>

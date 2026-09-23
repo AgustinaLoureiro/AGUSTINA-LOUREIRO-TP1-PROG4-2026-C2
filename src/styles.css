@@ -1,1 +1,22 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #17120D;
+  --surface: #2A1B12;
+  --ink: #EEDFC2;
+  --marquee: #8B160C;
+  --gold: #A77A41;
+  --muted: #AA703B;
+
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'Work Sans', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+}

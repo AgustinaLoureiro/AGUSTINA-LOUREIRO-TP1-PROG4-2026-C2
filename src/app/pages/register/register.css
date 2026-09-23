@@ -1,0 +1,67 @@
+.registro {
+  max-width: 420px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
+.registro h2 {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+  font-size: 1.75rem;
+  margin: 0 0 1.5rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1.1rem;
+}
+
+.campo label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.campo input {
+  padding: 0.65rem 0.85rem;
+  border-radius: 4px;
+  border: 1px solid var(--muted);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.campo input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.error {
+  font-size: 0.8rem;
+  color: var(--marquee);
+}
+
+.error--general {
+  margin: 0.5rem 0 1rem;
+}
+
+button[type='submit'] {
+  width: 100%;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--marquee);
+  color: var(--ink);
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+button[type='submit']:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -1,0 +1,53 @@
+<section class="registro">
+  <h2>Crear cuenta</h2>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="campo">
+      <label for="nombre">Nombre</label>
+      <input id="nombre" type="text" formControlName="nombre" />
+      @if (form.controls.nombre.invalid && form.controls.nombre.touched) {
+        <span class="error">Ingresá un nombre válido.</span>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="apellido">Apellido</label>
+      <input id="apellido" type="text" formControlName="apellido" />
+      @if (form.controls.apellido.invalid && form.controls.apellido.touched) {
+        <span class="error">Ingresá un apellido válido.</span>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="email">Email</label>
+      <input id="email" type="email" formControlName="email" />
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <span class="error">Ingresá un email válido.</span>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="fecha">Fecha de nacimiento</label>
+      <input id="fecha" type="date" formControlName="fechaNacimiento" />
+      @if (form.controls.fechaNacimiento.errors?.['fechaFutura']) {
+        <span class="error">La fecha no puede ser futura.</span>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="password">Contraseña</label>
+      <input id="password" type="password" formControlName="password" />
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <span class="error">Mínimo 6 caracteres.</span>
+      }
+    </div>
+
+    @if (errorMsg) {
+      <p class="error error--general">{{ errorMsg }}</p>
+    }
+
+    <button type="submit" [disabled]="cargando">
+      {{ cargando ? 'Creando cuenta...' : 'Registrarme' }}
+    </button>
+  </form>
+</section>
