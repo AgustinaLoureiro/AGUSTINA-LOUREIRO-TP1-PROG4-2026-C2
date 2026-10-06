@@ -1,0 +1,302 @@
+<section class="cabecera rayos">
+  <div class="contenedor cabecera__interior">
+    @if (auth.perfil(); as p) {
+      <div>
+        <p class="antetitulo">Mi cuenta</p>
+        <h1>Hola, {{ p.nombre || 'cinéfilo' }}</h1>
+        <p class="texto-suave">{{ p.email }}</p>
+      </div>
+      <div class="saldos">
+        <button type="button" class="saldo" (click)="pestania.set('puntos')">
+          <span class="saldo__valor">{{ p.puntos }}</span>
+          <span class="saldo__etiqueta">puntos</span>
+        </button>
+        <button type="button" class="saldo" (click)="pestania.set('credito')">
+          <span class="saldo__valor">{{ p.credito | precio }}</span>
+          <span class="saldo__etiqueta">crédito</span>
+        </button>
+      </div>
+    }
+  </div>
+</section>
+
+<div class="contenedor">
+  <nav class="pestanias" role="tablist">
+    @for (
+      t of [
+        ['entradas', 'Mis entradas'],
+        ['puntos', 'Puntos y canjes'],
+        ['credito', 'Crédito'],
+        ['datos', 'Mis datos'],
+      ];
+      track t[0]
+    ) {
+      <button
+        type="button"
+        role="tab"
+        class="pestania"
+        [class.pestania--activa]="pestania() === t[0]"
+        [attr.aria-selected]="pestania() === t[0]"
+        (click)="pestania.set($any(t[0]))"
+      >
+        {{ t[1] }}
+      </button>
+    }
+    <a routerLink="/mis-peliculas" class="pestania">Mis películas →</a>
+  </nav>
+
+  @if (cargando()) {
+    <div class="esqueleto" style="height: 260px"></div>
+  } @else {
+    @switch (pestania()) {
+      @case ('entradas') {
+        <h2 class="titulo-seccion">Próximas funciones</h2>
+        <div class="entradas">
+          @for (c of proximas(); track c.id) {
+            <article class="entrada">
+              <img [src]="c.funciones.peliculas.poster_url" alt="" appImagenRespaldo />
+              <div class="entrada__info">
+                <h3>{{ c.funciones.peliculas.titulo }}</h3>
+                <p class="entrada__cuando">
+                  {{ c.funciones.inicio | date: "EEEE d 'de' MMMM · HH:mm" }} hs
+                </p>
+                <p class="texto-suave">
+                  {{ c.funciones.salas.nombre }} · {{ c.funciones.formato }}
+                  {{ c.funciones.idioma | idioma: true }} · Butacas {{ butacasDe(c) }}
+                </p>
+                <div class="fila">
+                  @if (c.entrada_validada_en) {
+                    <span class="badge badge--ok">Ingresó</span>
+                  }
+                  @if (c.candy_entregado_en) {
+                    <span class="badge badge--ok">Candy retirado</span>
+                  }
+                </div>
+                <div class="fila acciones">
+                  <button
+                    type="button"
+                    class="btn btn--primario btn--chico"
+                    (click)="qrAbierto.set(c)"
+                  >
+                    Ver QR
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn--chico"
+                    [disabled]="procesando() === c.id"
+                    (click)="descargar(c)"
+                  >
+                    PDF
+                  </button>
+                  @if (cancelable(c)) {
+                    <button
+                      type="button"
+                      class="btn btn--peligro btn--chico"
+                      [disabled]="procesando() === c.id"
+                      (click)="cancelar(c)"
+                    >
+                      Cancelar
+                    </button>
+                  }
+                </div>
+              </div>
+            </article>
+          } @empty {
+            <div class="vacio">
+              <strong>No tenés funciones próximas.</strong>
+              <a routerLink="/cartelera" class="btn btn--primario btn--chico">Ver cartelera</a>
+            </div>
+          }
+        </div>
+        <p class="texto-suave nota">
+          Podés cancelar hasta {{ horasLimite() }} horas antes de la función. El importe se acredita
+          en tu cuenta para futuras compras.
+        </p>
+
+        @if (historial().length) {
+          <h2 class="titulo-seccion">Historial</h2>
+          <div class="tabla-scroll">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Película</th>
+                  <th>Función</th>
+                  <th>Código</th>
+                  <th>Estado</th>
+                  <th class="num">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of historial(); track c.id) {
+                  <tr>
+                    <td>{{ c.funciones.peliculas.titulo }}</td>
+                    <td>{{ c.funciones.inicio | date: 'dd/MM/yy HH:mm' }}</td>
+                    <td class="mono">{{ c.codigo | codigo }}</td>
+                    <td>
+                      @if (c.estado === 'cancelada') {
+                        <span class="badge badge--error">Cancelada</span>
+                      } @else {
+                        <span class="badge">Finalizada</span>
+                      }
+                    </td>
+                    <td class="num">{{ c.total | precio }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      @case ('puntos') {
+        <div class="dos-columnas">
+          <div class="tarjeta">
+            <h2 class="titulo-seccion">Qué podés canjear</h2>
+            <p class="texto-suave">
+              Ganás 1 punto por cada peso que pagás. Los canjes se eligen al comprar, en el paso de
+              candy. Los puntos son personales e intransferibles.
+            </p>
+            <ul class="recompensas">
+              @for (r of recompensas(); track r.id) {
+                @let alcanza = (auth.perfil()?.puntos ?? 0) >= r.puntos;
+                <li [class.alcanza]="alcanza">
+                  <span>{{ r.nombre }}</span>
+                  <span class="mono">{{ r.puntos }} pts</span>
+                  <div class="progreso">
+                    <span [style.width.%]="((auth.perfil()?.puntos ?? 0) / r.puntos) * 100"></span>
+                  </div>
+                </li>
+              }
+            </ul>
+          </div>
+          <div>
+            <h2 class="titulo-seccion">Historial de canjes</h2>
+            @for (m of canjes(); track m.id) {
+              <div class="movimiento">
+                <span>{{ m.detalle }}</span>
+                <span class="mono negativo">{{ m.puntos }}</span>
+                <small>{{ m.creado_en | date: 'dd/MM/yy HH:mm' }}</small>
+              </div>
+            } @empty {
+              <p class="texto-suave">Todavía no canjeaste puntos.</p>
+            }
+            <h2 class="titulo-seccion" style="margin-top: 2rem">Todos los movimientos</h2>
+            @for (m of puntos(); track m.id) {
+              <div class="movimiento">
+                <span
+                  ><span class="badge">{{ etiquetaTipo(m.tipo) }}</span> {{ m.detalle }}</span
+                >
+                <span class="mono" [class.negativo]="m.puntos < 0"
+                  >{{ m.puntos > 0 ? '+' : '' }}{{ m.puntos }}</span
+                >
+                <small>{{ m.creado_en | date: 'dd/MM/yy HH:mm' }}</small>
+              </div>
+            } @empty {
+              <p class="texto-suave">Tus puntos van a aparecer acá después de tu primera compra.</p>
+            }
+          </div>
+        </div>
+      }
+
+      @case ('credito') {
+        <h2 class="titulo-seccion">Crédito en tu cuenta</h2>
+        <p class="texto-suave">
+          Cuando cancelás una compra a tiempo, el importe vuelve como crédito. Lo podés usar en
+          cualquier compra, combinado con tarjeta.
+        </p>
+        @for (m of credito(); track m.id) {
+          <div class="movimiento">
+            <span>{{ m.detalle }}</span>
+            <span class="mono" [class.negativo]="m.monto < 0"
+              >{{ m.monto > 0 ? '+' : '' }}{{ m.monto | precio }}</span
+            >
+            <small>{{ m.creado_en | date: 'dd/MM/yy HH:mm' }}</small>
+          </div>
+        } @empty {
+          <div class="vacio">No tenés movimientos de crédito.</div>
+        }
+      }
+
+      @case ('datos') {
+        <div class="dos-columnas">
+          <form class="tarjeta" [formGroup]="datos" (ngSubmit)="guardarDatos()">
+            <h2 class="titulo-seccion">Mis datos</h2>
+            <div class="campo">
+              <label for="nombre">Nombre</label>
+              <input id="nombre" formControlName="nombre" />
+              <app-errores-campo [control]="datos.controls.nombre" />
+            </div>
+            <div class="campo">
+              <label for="apellido">Apellido</label>
+              <input id="apellido" formControlName="apellido" />
+              <app-errores-campo [control]="datos.controls.apellido" />
+            </div>
+            <div class="campo">
+              <label>Email</label>
+              <input [value]="auth.perfil()?.email" disabled />
+            </div>
+            @if (faltaFecha()) {
+              <app-campo-fecha
+                [control]="datos.controls.fechaNacimiento"
+                etiqueta="Fecha de nacimiento"
+                idCampo="nacimiento"
+              >
+                <app-errores-campo [control]="datos.controls.fechaNacimiento" />
+                <span class="campo__ayuda"
+                  >Se carga una sola vez. La necesitamos para películas con restricción de
+                  edad.</span
+                >
+              </app-campo-fecha>
+            } @else {
+              <div class="campo">
+                <label for="fecha-fija">Fecha de nacimiento</label>
+                <input
+                  id="fecha-fija"
+                  [value]="auth.perfil()?.fecha_nacimiento | date: 'dd/MM/yyyy'"
+                  disabled
+                />
+              </div>
+            }
+            <button type="submit" class="btn btn--primario" [disabled]="datos.pristine">
+              Guardar cambios
+            </button>
+          </form>
+
+          <div class="tarjeta">
+            <h2 class="titulo-seccion">Notificaciones</h2>
+            <p class="texto-suave">
+              Te avisamos cuando abre la venta de los estrenos que marcaste en Próximamente.
+            </p>
+            <p>
+              Alertas activas: <strong>{{ notis.alertas().size }}</strong>
+            </p>
+            @if (notis.pushDisponible) {
+              <button type="button" class="btn" (click)="activarPush()">
+                Recibir avisos en este dispositivo
+              </button>
+            } @else {
+              <p class="campo__ayuda">
+                Los avisos llegan dentro de la app (campanita). Instalá CineCorn como app para
+                recibirlos también fuera del navegador.
+              </p>
+            }
+          </div>
+        </div>
+      }
+    }
+  }
+</div>
+
+@if (qrAbierto(); as c) {
+  <div class="modal" role="dialog" aria-label="Código QR" (click)="qrAbierto.set(null)">
+    <div class="modal__tarjeta" (click)="$event.stopPropagation()">
+      <p class="modal__titulo">{{ c.funciones.peliculas.titulo }}</p>
+      <p class="texto-suave">
+        {{ c.funciones.inicio | date: 'EEE d/MM · HH:mm' }} · {{ c.funciones.salas.nombre }}
+      </p>
+      <app-codigo-qr [texto]="c.codigo" />
+      <p class="mono codigo">{{ c.codigo | codigo }}</p>
+      <button type="button" class="btn btn--bloque" (click)="qrAbierto.set(null)">Cerrar</button>
+    </div>
+  </div>
+}

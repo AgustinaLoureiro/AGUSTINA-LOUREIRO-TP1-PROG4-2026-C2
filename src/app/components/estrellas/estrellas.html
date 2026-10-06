@@ -1,0 +1,40 @@
+@if (editable()) {
+  <div
+    class="estrellas estrellas--editable"
+    [class.estrellas--grande]="tamanio() === 'grande'"
+    role="radiogroup"
+    aria-label="Calificación"
+    (mouseleave)="hover.set(0)"
+  >
+    @for (p of posiciones; track p) {
+      <button
+        type="button"
+        class="estrella"
+        role="radio"
+        [attr.aria-checked]="valor() === p"
+        [attr.aria-label]="p + (p === 1 ? ' estrella' : ' estrellas')"
+        (mouseenter)="hover.set(p)"
+        (focus)="hover.set(p)"
+        (blur)="hover.set(0)"
+        (click)="elegir(p)"
+      >
+        <span class="estrella__fondo">★</span>
+        <span class="estrella__relleno" [style.width.%]="relleno(p)">★</span>
+      </button>
+    }
+  </div>
+} @else {
+  <div
+    class="estrellas"
+    [class.estrellas--grande]="tamanio() === 'grande'"
+    role="img"
+    [attr.aria-label]="valor() + ' de 5 estrellas'"
+  >
+    @for (p of posiciones; track p) {
+      <span class="estrella">
+        <span class="estrella__fondo">★</span>
+        <span class="estrella__relleno" [style.width.%]="relleno(p)">★</span>
+      </span>
+    }
+  </div>
+}

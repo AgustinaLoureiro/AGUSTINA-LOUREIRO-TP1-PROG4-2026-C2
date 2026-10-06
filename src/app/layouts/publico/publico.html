@@ -1,0 +1,159 @@
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+
+<header class="barra">
+  <div class="contenedor barra__interior">
+    <a routerLink="/" class="marca" aria-label="CineCorn, inicio">
+      <img src="/marca/isotipo-96.png" alt="" width="40" height="40" />
+      <span class="marca__nombre">CINE<span>CORN</span></span>
+    </a>
+
+    <nav class="nav" [class.nav--abierta]="menuAbierto()" aria-label="Principal">
+      <a routerLink="/cartelera" routerLinkActive="nav__link--activo" class="nav__link"
+        >Cartelera</a
+      >
+      <a routerLink="/proximamente" routerLinkActive="nav__link--activo" class="nav__link"
+        >Próximamente</a
+      >
+      @if (!auth.logueado()) {
+        <a routerLink="/ingresar" class="nav__link nav__link--movil">Ingresar</a>
+        <a routerLink="/registro" class="nav__link nav__link--movil">Crear cuenta</a>
+      }
+    </nav>
+
+    <div class="acciones">
+      @if (auth.logueado()) {
+        <div class="desplegable">
+          <button
+            type="button"
+            class="btn-icono campana"
+            (click)="alternarNotis()"
+            [attr.aria-expanded]="panelNotis()"
+            aria-label="Notificaciones"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"
+              />
+            </svg>
+            @if (notis.noLeidas() > 0) {
+              <span class="campana__contador">{{ notis.noLeidas() }}</span>
+            }
+          </button>
+          @if (panelNotis()) {
+            <div class="panel" role="dialog" aria-label="Notificaciones">
+              <p class="panel__titulo">Notificaciones</p>
+              @for (n of notis.lista(); track n.id) {
+                <a class="noti" [routerLink]="n.url ?? '/'" (click)="cerrarTodo()">
+                  <strong>{{ n.titulo }}</strong>
+                  <span>{{ n.cuerpo }}</span>
+                  <small>{{ n.creada_en | tiempoRelativo }}</small>
+                </a>
+              } @empty {
+                <p class="panel__vacio">
+                  Activá alertas en <a routerLink="/proximamente">Próximamente</a> y te avisamos
+                  cuando salgan las entradas.
+                </p>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="desplegable">
+          <button
+            type="button"
+            class="usuario"
+            (click)="alternarUsuario()"
+            [attr.aria-expanded]="panelUsuario()"
+          >
+            <span class="usuario__avatar" aria-hidden="true">{{
+              (auth.perfil()?.nombre || auth.usuario()?.email || '?').charAt(0)
+            }}</span>
+            <span class="usuario__nombre">{{ auth.perfil()?.nombre || 'Mi cuenta' }}</span>
+          </button>
+          @if (panelUsuario()) {
+            <div class="panel panel--menu" role="menu">
+              @if (auth.perfil(); as p) {
+                <p class="panel__puntos">
+                  <span>{{ p.puntos }}</span> puntos
+                </p>
+              }
+              <a routerLink="/perfil" role="menuitem">Mi cuenta y entradas</a>
+              <a routerLink="/mis-peliculas" role="menuitem">Mis películas</a>
+              <a *appSiRol="['admin']" routerLink="/admin" role="menuitem" class="panel__especial"
+                >Panel de administración</a
+              >
+              <a
+                *appSiRol="['admin', 'empleado']"
+                routerLink="/staff"
+                role="menuitem"
+                class="panel__especial"
+                >Validar entradas</a
+              >
+              <button type="button" role="menuitem" (click)="salir()">Cerrar sesión</button>
+            </div>
+          }
+        </div>
+      } @else {
+        <a routerLink="/ingresar" class="btn btn--fantasma btn--chico solo-escritorio">Ingresar</a>
+        <a routerLink="/registro" class="btn btn--primario btn--chico solo-escritorio"
+          >Crear cuenta</a
+        >
+      }
+
+      <button
+        type="button"
+        class="btn-icono hamburguesa"
+        (click)="menuAbierto.set(!menuAbierto())"
+        [attr.aria-expanded]="menuAbierto()"
+        aria-label="Menú"
+      >
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+@if (panelNotis() || panelUsuario()) {
+  <div class="velo" (click)="cerrarTodo()" aria-hidden="true"></div>
+}
+
+@if (auth.perfilIncompleto()) {
+  <div class="aviso-perfil" role="status">
+    <div class="contenedor aviso-perfil__interior">
+      <span>Completá tu nombre y fecha de nacimiento para poder comprar todas las películas.</span>
+      <a routerLink="/perfil" [queryParams]="{ tab: 'datos' }" class="btn btn--primario btn--chico"
+        >Completar datos</a
+      >
+    </div>
+  </div>
+}
+
+<main id="contenido">
+  <router-outlet />
+</main>
+
+<footer class="pie">
+  <div class="pie__luces" aria-hidden="true"></div>
+  <div class="contenedor pie__interior">
+    <div class="pie__marca">
+      <img src="/marca/isotipo-96.png" alt="" width="48" height="48" />
+      <div>
+        <strong>CINECORN</strong>
+        <p>No es solo un cine, es el plan perfecto.</p>
+      </div>
+    </div>
+    <nav class="pie__links" aria-label="Secundaria">
+      <a routerLink="/cartelera">Cartelera</a>
+      <a routerLink="/proximamente">Próximamente</a>
+      <a routerLink="/registro">Beneficios por registrarte</a>
+      <a routerLink="/perfil">Mis entradas</a>
+    </nav>
+    <p class="pie__legal">
+      © {{ anio }} CineCorn. Pósters y sinopsis provistos por TMDB. Pago simulado con fines
+      académicos.
+    </p>
+  </div>
+</footer>
+
+<app-dialogo-confirmacion />

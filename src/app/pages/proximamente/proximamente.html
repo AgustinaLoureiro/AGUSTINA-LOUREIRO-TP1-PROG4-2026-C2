@@ -1,0 +1,82 @@
+<section class="encabezado rayos">
+  <div class="contenedor">
+    <p class="antetitulo">Próximamente</p>
+    <h1>Los estrenos que se vienen</h1>
+    <p class="bajada">
+      Activá la alerta y te avisamos apenas abra la venta. Algunas tienen preventa con precio
+      especial.
+    </p>
+  </div>
+</section>
+
+<div class="contenedor lista">
+  @if (cargando()) {
+    @for (i of [1, 2]; track i) {
+      <div class="esqueleto" style="height: 260px"></div>
+    }
+  } @else {
+    @for (p of estrenos(); track p.id; let i = $index) {
+      <article class="estreno">
+        <a [routerLink]="['/pelicula', p.id]" class="estreno__poster">
+          <img [src]="p.poster_url" [alt]="'Póster de ' + p.titulo" appImagenRespaldo />
+        </a>
+
+        <div class="estreno__fecha" aria-label="Fecha de estreno">
+          <span class="estreno__dia">{{ p.fecha_estreno | date: 'd' }}</span>
+          <span class="estreno__mes">{{ p.fecha_estreno | date: 'MMM' }}</span>
+        </div>
+
+        <div class="estreno__info">
+          <h2>
+            <a [routerLink]="['/pelicula', p.id]">{{ p.titulo }}</a>
+          </h2>
+          <p class="fila meta">
+            <span class="badge" [class.badge--rojo]="p.clasificacion !== 'ATP'">{{
+              p.clasificacion
+            }}</span>
+            <span>{{ p.duracion_min | duracion }}</span>
+            <span>{{ p.generos.join(' · ') }}</span>
+          </p>
+          <p class="sinopsis">{{ p.sinopsis }}</p>
+
+          @if (p.en_preventa) {
+            <div class="aviso aviso--oro">
+              <strong>Preventa abierta</strong>
+              <span>{{ p.preventa_descuento }}% de descuento hasta el día del estreno.</span>
+            </div>
+          } @else if (p.preventa_habilitada) {
+            <p class="texto-suave">
+              Preventa {{ p.venta_desde | tiempoRelativo }} con {{ p.preventa_descuento }}% de
+              descuento.
+            </p>
+          }
+
+          <div class="fila acciones">
+            @if (ventaAbierta(p)) {
+              <a [routerLink]="['/pelicula', p.id]" class="btn btn--primario">Comprar entradas</a>
+            } @else {
+              <button
+                type="button"
+                class="btn"
+                [class.btn--primario]="!notis.alertas().has(p.id)"
+                [disabled]="procesando() === p.id"
+                (click)="alerta(p)"
+              >
+                {{
+                  notis.alertas().has(p.id)
+                    ? '🔔 Alerta activada'
+                    : 'Avisame cuando salgan las entradas'
+                }}
+              </button>
+              <span class="texto-suave"
+                >Venta desde el {{ p.venta_desde | date: "d 'de' MMMM" }}</span
+              >
+            }
+          </div>
+        </div>
+      </article>
+    } @empty {
+      <div class="vacio">Por ahora no hay estrenos anunciados.</div>
+    }
+  }
+</div>

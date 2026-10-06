@@ -1,0 +1,38 @@
+@let p = pelicula();
+<a class="tarjeta-peli" [routerLink]="['/pelicula', p.id]">
+  <div class="tarjeta-peli__poster">
+    <img [src]="p.poster_url" [alt]="'Póster de ' + p.titulo" appImagenRespaldo />
+    <div class="tarjeta-peli__badges">
+      @if (p.clasificacion !== 'ATP') {
+        <span class="badge badge--rojo">{{ p.clasificacion }}</span>
+      } @else {
+        <span class="badge">ATP</span>
+      }
+      @if (p.en_preventa) {
+        <span class="badge badge--oro">Preventa</span>
+      }
+    </div>
+    @if (puesto()) {
+      <span class="tarjeta-peli__puesto" aria-label="Puesto">#{{ puesto() }}</span>
+    }
+    <span class="tarjeta-peli__accion">{{
+      p.proximamente && !p.en_preventa ? 'Ver estreno' : 'Comprar entradas'
+    }}</span>
+  </div>
+  <div class="tarjeta-peli__info">
+    <h3>{{ p.titulo }}</h3>
+    <p class="tarjeta-peli__meta">
+      @if (p.proximamente) {
+        Estreno {{ p.fecha_estreno | date: "d 'de' MMMM" }}
+      } @else {
+        {{ p.duracion_min | duracion }} · {{ p.generos.slice(0, 2).join(', ') }}
+      }
+    </p>
+    @if (p.cantidad_resenas > 0) {
+      <div class="tarjeta-peli__rating">
+        <app-estrellas [valor]="p.promedio" />
+        <span>{{ p.promedio }}</span>
+      </div>
+    }
+  </div>
+</a>

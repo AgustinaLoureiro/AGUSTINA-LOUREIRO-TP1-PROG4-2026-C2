@@ -1,0 +1,111 @@
+<section class="encabezado-pagina rayos">
+  <div class="contenedor">
+    <p class="antetitulo">Cartelera</p>
+    <h1>¿Qué vemos hoy?</h1>
+
+    <div class="buscador">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M10 2a8 8 0 0 1 6.32 12.9l5.39 5.4-1.41 1.4-5.4-5.39A8 8 0 1 1 10 2Zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z"
+        />
+      </svg>
+      <label for="busqueda" class="sr-only">Buscar película</label>
+      <input
+        id="busqueda"
+        type="search"
+        placeholder="Buscá por título o tema…"
+        autocomplete="off"
+        [ngModel]="busqueda()"
+        (ngModelChange)="buscar($event)"
+      />
+    </div>
+  </div>
+</section>
+
+<div class="contenedor cuerpo">
+  <aside class="filtros" aria-label="Filtros">
+    <div class="filtro">
+      <p class="filtro__titulo">Géneros <small>(podés elegir varios)</small></p>
+      <div class="chips">
+        @for (g of generos(); track g) {
+          <button
+            type="button"
+            class="chip"
+            [attr.aria-pressed]="generosElegidos().has(g)"
+            (click)="alternarGenero(g)"
+          >
+            {{ g }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="filtro">
+      <p class="filtro__titulo">Calificación</p>
+      <div class="chips">
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="clasificacion() === null"
+          (click)="clasificacion.set(null)"
+        >
+          Todas
+        </button>
+        @for (c of clasificaciones; track c) {
+          <button
+            type="button"
+            class="chip"
+            [attr.aria-pressed]="clasificacion() === c"
+            (click)="clasificacion.set(c)"
+          >
+            {{ c }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <label class="check">
+      <input
+        type="checkbox"
+        [ngModel]="incluirProximas()"
+        (ngModelChange)="incluirProximas.set($event)"
+      />
+      Incluir próximos estrenos
+    </label>
+  </aside>
+
+  <section aria-live="polite">
+    <div class="fila fila--entre resumen">
+      <p class="texto-suave">
+        @if (!cargando()) {
+          {{ resultado().length }} {{ resultado().length === 1 ? 'película' : 'películas' }}
+        }
+      </p>
+      @if (hayFiltros()) {
+        <button type="button" class="btn btn--fantasma btn--chico" (click)="limpiar()">
+          Limpiar filtros
+        </button>
+      }
+    </div>
+
+    <div class="grilla">
+      @if (cargando()) {
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="esqueleto poster-esqueleto"></div>
+        }
+      } @else {
+        @for (p of resultado(); track p.id) {
+          <app-tarjeta-pelicula [pelicula]="p" />
+        } @empty {
+          <div class="vacio">
+            <strong>No encontramos películas con esos filtros.</strong>
+            <button type="button" class="btn btn--chico" (click)="limpiar()">
+              Ver toda la cartelera
+            </button>
+          </div>
+        }
+      }
+    </div>
+  </section>
+</div>

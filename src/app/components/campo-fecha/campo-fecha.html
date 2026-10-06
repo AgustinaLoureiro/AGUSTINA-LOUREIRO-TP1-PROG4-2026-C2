@@ -1,0 +1,61 @@
+<div class="campo" [class.campo--invalido]="control().invalid && control().touched">
+  <span class="campo__label" [id]="idCampo() + '-label'">{{ etiqueta() }}</span>
+  <div class="fecha" role="group" [attr.aria-labelledby]="idCampo() + '-label'">
+    <input
+      #refDia
+      class="fecha__parte"
+      inputmode="numeric"
+      autocomplete="off"
+      placeholder="DD"
+      aria-label="Día"
+      maxlength="2"
+      [id]="idCampo()"
+      [value]="dia()"
+      (input)="escribir('dia', $event)"
+      (blur)="tocar()"
+    />
+    <span class="fecha__sep">/</span>
+    <input
+      #refMes
+      class="fecha__parte"
+      inputmode="numeric"
+      autocomplete="off"
+      placeholder="MM"
+      aria-label="Mes"
+      maxlength="2"
+      [value]="mes()"
+      (input)="escribir('mes', $event)"
+      (keydown)="retroceder($event, refDia)"
+      (blur)="tocar()"
+    />
+    <span class="fecha__sep">/</span>
+    <input
+      #refAnio
+      class="fecha__parte fecha__parte--anio"
+      inputmode="numeric"
+      autocomplete="off"
+      placeholder="AAAA"
+      aria-label="Año"
+      maxlength="4"
+      [value]="anio()"
+      (input)="escribir('anio', $event)"
+      (keydown)="retroceder($event, refMes)"
+      (blur)="tocar()"
+    />
+  </div>
+  @if (atajos().length) {
+    <div class="chips">
+      @for (a of atajos(); track a.texto) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip--activo]="atajoActivo(a)"
+          (click)="aplicarAtajo(a)"
+        >
+          {{ a.texto }}
+        </button>
+      }
+    </div>
+  }
+  <ng-content />
+</div>

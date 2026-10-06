@@ -1,1 +1,227 @@
-<h2>PRUEBA ADMIN</h2>
+<header class="barra">
+  <div class="barra__marca">
+    <img src="/marca/isotipo-96.png" alt="" width="34" height="34" />
+    <div>
+      <strong>CINECORN</strong>
+      <small>Control de acceso</small>
+    </div>
+  </div>
+  <div class="barra__acciones">
+    <a *appSiRol="['admin']" routerLink="/admin" class="btn btn--chico btn--fantasma"
+      >Panel admin</a
+    >
+    <div class="persona">
+      <span class="persona__avatar" aria-hidden="true">{{ iniciales() }}</span>
+      <span class="persona__nombre">{{ nombre() }}</span>
+    </div>
+    <button type="button" class="btn btn--chico" (click)="salir()">Salir</button>
+  </div>
+</header>
+
+<main class="escritorio">
+  <section class="columna-principal">
+    <div class="sectores" role="tablist" aria-label="Sector">
+      <button
+        type="button"
+        role="tab"
+        class="sector"
+        [class.sector--activo]="sector() === 'entrada'"
+        [attr.aria-selected]="sector() === 'entrada'"
+        (click)="cambiarSector('entrada')"
+      >
+        <span class="sector__icono" aria-hidden="true">🎟</span>
+        <span><strong>Ingreso a sala</strong><small>Valida la entrada</small></span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="sector"
+        [class.sector--activo]="sector() === 'candy'"
+        [attr.aria-selected]="sector() === 'candy'"
+        (click)="cambiarSector('candy')"
+      >
+        <span class="sector__icono" aria-hidden="true">🍿</span>
+        <span><strong>Candy bar</strong><small>Entrega los productos</small></span>
+      </button>
+    </div>
+
+    <div class="lector">
+      <div class="visor" [class.visor--activo]="camaraActiva()">
+        @if (camaraActiva()) {
+          <video #video playsinline muted></video>
+          <div class="visor__marco" aria-hidden="true"></div>
+          <p class="visor__estado">
+            {{ validando() ? 'Validando…' : 'Apuntá al código QR de la entrada' }}
+          </p>
+        } @else {
+          <div class="visor__reposo">
+            <svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true">
+              <path
+                d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
+            </svg>
+            <p>Escaneá el QR de la entrada o del PDF</p>
+            <button type="button" class="btn btn--primario grande" (click)="iniciarCamara()">
+              Activar cámara
+            </button>
+            @if (errorCamara()) {
+              <p class="aviso aviso--error">{{ errorCamara() }}</p>
+            }
+          </div>
+        }
+      </div>
+      @if (camaraActiva()) {
+        <button type="button" class="btn btn--bloque" (click)="detenerCamara()">
+          Apagar cámara
+        </button>
+      }
+
+      <form class="manual" (submit)="$event.preventDefault(); validarManual()">
+        <label for="codigo">¿El QR no se lee? Ingresá el código impreso debajo</label>
+        <div class="manual__fila">
+          <input
+            id="codigo"
+            class="manual__input"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            placeholder="CC-XXXXX-XXXXX"
+            [value]="codigoManual()"
+            (input)="escribirCodigo($event)"
+          />
+          <button
+            type="submit"
+            class="btn btn--primario"
+            [disabled]="!codigoCompleto() || validando()"
+          >
+            Validar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="turno">
+      <div class="turno__dato turno__dato--ok">
+        <strong>{{ aceptados() }}</strong
+        ><span>validados</span>
+      </div>
+      <div class="turno__dato turno__dato--mal">
+        <strong>{{ rechazados() }}</strong
+        ><span>rechazados</span>
+      </div>
+      <p class="turno__texto">
+        En este turno, en {{ sector() === 'entrada' ? 'el ingreso a sala' : 'el candy bar' }}
+      </p>
+    </div>
+  </section>
+
+  <aside class="columna-lateral">
+    <section class="panel">
+      <h2 class="panel__titulo">Funciones de hoy</h2>
+      @for (f of proximas(); track f.id) {
+        <div class="funcion" [class.funcion--ahora]="enCurso(f)">
+          <span class="funcion__hora mono">{{ f.inicio | date: 'HH:mm' }}</span>
+          <div class="funcion__info">
+            <strong>{{ f.peliculas.titulo }}</strong>
+            <small>{{ f.salas.nombre }} · {{ f.formato }} · {{ f.peliculas.clasificacion }}</small>
+          </div>
+          <span
+            class="funcion__cuenta mono"
+            [title]="sector() === 'entrada' ? 'Compras que ya ingresaron' : 'Candy entregado'"
+          >
+            @if (sector() === 'entrada') {
+              {{ f.ingresaron }}/{{ f.compras }}
+            } @else {
+              {{ f.candyEntregado }}/{{ f.conCandy }}
+            }
+          </span>
+        </div>
+      } @empty {
+        <p class="vacio-chico">No quedan funciones por hoy.</p>
+      }
+    </section>
+
+    @if (historial().length) {
+      <section class="panel">
+        <h2 class="panel__titulo">Últimas lecturas</h2>
+        @for (h of historial(); track $index) {
+          <div class="lectura">
+            <span
+              class="lectura__estado"
+              [class.ok]="h.ok"
+              [class.mal]="!h.ok"
+              aria-hidden="true"
+              >{{ h.ok ? '✓' : '✕' }}</span
+            >
+            <div>
+              <span class="mono">{{ h.codigo }}</span>
+              <small
+                >{{ h.hora | date: 'HH:mm:ss' }} · {{ h.sector === 'entrada' ? 'Sala' : 'Candy' }} ·
+                {{ h.ok ? 'OK' : h.motivo }}</small
+              >
+            </div>
+          </div>
+        }
+      </section>
+    }
+  </aside>
+</main>
+
+@if (resultado(); as r) {
+  <div
+    class="resultado"
+    [class.resultado--ok]="r.ok"
+    [class.resultado--error]="!r.ok"
+    role="alertdialog"
+    aria-live="assertive"
+  >
+    <div class="resultado__caja">
+      <p class="resultado__icono" aria-hidden="true">{{ r.ok ? '✓' : '✕' }}</p>
+      <p class="resultado__motivo">{{ r.motivo }}</p>
+      @if (r.compra; as c) {
+        <div class="resultado__detalle">
+          <p class="resultado__peli">
+            {{ c.pelicula.titulo }} <span class="etiqueta">{{ c.pelicula.clasificacion }}</span>
+          </p>
+          <p>
+            {{ c.funcion.inicio | date: 'EEE d/MM · HH:mm' }} · {{ c.funcion.sala }} ·
+            {{ c.funcion.formato }}
+          </p>
+          @if (sector() === 'entrada') {
+            <div class="butacas">
+              @for (e of c.entradas; track e.butaca) {
+                <span [class.vip]="e.tipo === 'vip'" [class.accesible]="e.tipo === 'accesible'">
+                  {{ e.butaca
+                  }}{{ e.tipo === 'vip' ? ' VIP' : e.tipo === 'accesible' ? ' ♿' : '' }}
+                </span>
+              }
+            </div>
+            @if (c.pelicula.clasificacion !== 'ATP') {
+              <p class="alerta-edad">
+                Película {{ c.pelicula.clasificacion }}: verificar edad / adulto responsable.
+              </p>
+            }
+          } @else {
+            <ul class="items">
+              @for (i of c.items; track $index) {
+                <li>
+                  <span>{{ i.cantidad }}</span> {{ i.nombre }}
+                </li>
+              } @empty {
+                <li>Sin productos</li>
+              }
+            </ul>
+          }
+          <p class="codigo mono">{{ c.codigo | codigo }} · {{ c.nombre || c.email }}</p>
+        </div>
+      }
+      <button type="button" class="btn btn--bloque grande" (click)="siguiente()">Siguiente</button>
+    </div>
+  </div>
+}
+
+<app-dialogo-confirmacion />

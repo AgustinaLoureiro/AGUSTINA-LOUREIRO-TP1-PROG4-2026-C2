@@ -1,0 +1,22 @@
+@if (carga.activa()) {
+  <div class="barra-carga" role="progressbar" aria-label="Cargando"></div>
+}
+
+<div class="avisos" aria-live="polite">
+  @for (a of avisos.lista(); track a.id) {
+    <div class="aviso-flotante aviso-flotante--{{ a.tipo }}" role="status">
+      <span class="aviso-flotante__icono" aria-hidden="true">
+        {{ a.tipo === 'ok' ? '✓' : a.tipo === 'error' ? '!' : 'i' }}
+      </span>
+      <p>{{ a.texto }}</p>
+      <button
+        type="button"
+        class="aviso-flotante__cerrar"
+        aria-label="Cerrar"
+        (click)="avisos.cerrar(a.id)"
+      >
+        ×
+      </button>
+    </div>
+  }
+</div>

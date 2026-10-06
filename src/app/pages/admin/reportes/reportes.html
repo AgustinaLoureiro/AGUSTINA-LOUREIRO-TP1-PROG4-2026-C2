@@ -1,0 +1,189 @@
+<div class="adm-cabecera">
+  <div>
+    <h1>Reportes</h1>
+    <p>
+      Facturación diaria, entradas vendidas, películas más vistas y lo más vendido del candy bar.
+    </p>
+  </div>
+  <div class="fila">
+    <button type="button" class="btn" [disabled]="!!exportando()" (click)="exportar('pdf')">
+      {{ exportando() === 'pdf' ? 'Generando…' : 'Exportar PDF' }}
+    </button>
+    <button type="button" class="btn" [disabled]="!!exportando()" (click)="exportar('xlsx')">
+      {{ exportando() === 'xlsx' ? 'Generando…' : 'Exportar Excel' }}
+    </button>
+  </div>
+</div>
+
+<div class="chips filtros">
+  @for (r of rangos; track r[0]) {
+    <button
+      type="button"
+      class="chip"
+      [attr.aria-pressed]="rango() === r[0]"
+      (click)="elegirRango(r[0])"
+    >
+      {{ r[1] }}
+    </button>
+  }
+  <span class="texto-suave mono"
+    >{{ fechas().desde | date: 'dd/MM/yy' }} – {{ fechas().hasta | date: 'dd/MM/yy' }}</span
+  >
+</div>
+
+<div class="kpis">
+  <div class="kpi">
+    <span class="kpi__etiqueta">Facturado</span
+    ><span class="kpi__valor">{{ totales().facturado | precio }}</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi__etiqueta">Entradas vendidas</span
+    ><span class="kpi__valor">{{ totales().entradas }}</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi__etiqueta">Compras</span
+    ><span class="kpi__valor">{{ totales().compras }}</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi__etiqueta">Ticket promedio</span
+    ><span class="kpi__valor">{{ ticketPromedio() | precio }}</span>
+  </div>
+</div>
+
+<div class="adm-grilla dos">
+  <section class="adm-panel">
+    <p class="adm-panel__titulo">Facturación por día</p>
+    <app-grafico-barras
+      [etiquetas]="etiquetasDias()"
+      [valores]="valoresDias()"
+      formato="moneda"
+      descripcion="Facturación por día"
+    />
+  </section>
+  <section class="adm-panel">
+    <p class="adm-panel__titulo">Entradas vendidas por día</p>
+    <app-grafico-barras
+      [etiquetas]="etiquetasDias()"
+      [valores]="entradasDias()"
+      descripcion="Entradas vendidas por día"
+    />
+  </section>
+</div>
+
+<div class="adm-grilla dos">
+  <section class="adm-panel">
+    <div class="fila fila--entre">
+      <p class="adm-panel__titulo">Películas más vistas</p>
+      <div class="chips">
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="periodo() === 'semana'"
+          (click)="cambiarPeriodo('semana')"
+        >
+          Semana
+        </button>
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="periodo() === 'mes'"
+          (click)="cambiarPeriodo('mes')"
+        >
+          Mes
+        </button>
+      </div>
+    </div>
+    <div class="navegador">
+      <button
+        type="button"
+        class="btn btn--chico"
+        (click)="mover(-1)"
+        aria-label="Período anterior"
+      >
+        ←
+      </button>
+      <span class="mono"
+        >{{ rangoPeliculas().desde | date: 'dd/MM' }} –
+        {{ rangoPeliculas().hasta | date: 'dd/MM/yy' }}</span
+      >
+      <button
+        type="button"
+        class="btn btn--chico"
+        (click)="mover(1)"
+        aria-label="Período siguiente"
+      >
+        →
+      </button>
+    </div>
+    @if (peliculas().length) {
+      <app-grafico-barras
+        [etiquetas]="titulosPeliculas()"
+        [valores]="entradasPeliculas()"
+        [horizontal]="true"
+        [alto]="300"
+        descripcion="Entradas por película"
+      />
+    } @else {
+      <p class="vacio">Sin entradas vendidas en este período.</p>
+    }
+  </section>
+
+  <section class="adm-panel">
+    <p class="adm-panel__titulo">Candy bar · unidades vendidas</p>
+    @if (productos().length) {
+      <p class="destacado">
+        Más vendido: <strong>{{ productos()[0].nombre }}</strong> ({{ productos()[0].unidades }} u.)
+      </p>
+      <app-grafico-barras
+        [etiquetas]="nombresProductos()"
+        [valores]="unidadesProductos()"
+        [horizontal]="true"
+        [alto]="280"
+        descripcion="Unidades vendidas por producto"
+      />
+      <p class="campo__ayuda">Incluye los productos vendidos dentro de combos.</p>
+    } @else {
+      <p class="vacio">Sin ventas de candy en el período.</p>
+    }
+  </section>
+</div>
+
+<section class="adm-panel">
+  <p class="adm-panel__titulo">Detalle por día</p>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th class="num">Compras</th>
+          <th class="num">Entradas</th>
+          <th class="num">Facturado</th>
+          <th class="num">Tarjeta</th>
+          <th class="num">Crédito</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (f of filas(); track f.fecha) {
+          <tr>
+            <td class="mono">{{ f.fecha | date: 'EEE dd/MM' }}</td>
+            <td class="num">{{ f.compras }}</td>
+            <td class="num">{{ f.entradas }}</td>
+            <td class="num">{{ f.facturado | precio }}</td>
+            <td class="num">{{ f.cobrado_tarjeta | precio }}</td>
+            <td class="num">{{ f.credito_aplicado | precio }}</td>
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <th>Total</th>
+          <th class="num">{{ totales().compras }}</th>
+          <th class="num">{{ totales().entradas }}</th>
+          <th class="num">{{ totales().facturado | precio }}</th>
+          <th class="num">{{ totales().tarjeta | precio }}</th>
+          <th class="num">{{ totales().credito | precio }}</th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>

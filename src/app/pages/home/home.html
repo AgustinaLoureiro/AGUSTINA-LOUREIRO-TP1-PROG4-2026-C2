@@ -1,42 +1,130 @@
-<header class="topbar">
-  <div class="topbar__brand">
-    <img src="/marca/isotipo.svg" alt="Cinecorn" class="topbar__mark" />
-    <span class="topbar__name">CINECORN</span>
-  </div>
-  <nav class="topbar__nav">
-    <a routerLink="/register" class="topbar__link">Crear cuenta</a>
-  </nav>
-</header>
+<section class="hero rayos">
+  <div class="hero__telon hero__telon--izq telon" aria-hidden="true"></div>
+  <div class="hero__telon hero__telon--der telon" aria-hidden="true"></div>
 
-<section class="hero">
-  <img
-    src="/marca/logotipo.png"
-    alt="Cinecorn — No es solo un cine, es el plan perfecto"
-    class="hero__marquee"
-  />
+  <div class="contenedor hero__interior">
+    <picture class="hero__marquesina">
+      <source srcset="/marca/logotipo.webp" type="image/webp" />
+      <img
+        src="/marca/logotipo-900.png"
+        width="900"
+        height="623"
+        alt="CineCorn: no es solo un cine, es el plan perfecto"
+        fetchpriority="high"
+      />
+    </picture>
 
-  <div class="hero__search">
-    <input
-      type="search"
-      placeholder="Buscar película..."
-      [value]="busqueda()"
-      (input)="busqueda.set($any($event.target).value)"
-    />
-    <button type="button">Buscar</button>
+    <div class="hero__texto">
+      <p class="antetitulo">Esta semana en sala</p>
+      <h1>Tu película, tu butaca y tus pochoclos.</h1>
+      <p class="hero__bajada">
+        Elegí la función, reservá tu lugar en vivo y retirá todo con un solo QR.
+      </p>
+      <div class="fila">
+        <a routerLink="/cartelera" class="btn btn--primario">Ver cartelera</a>
+        @if (!auth.logueado()) {
+          <a routerLink="/registro" class="btn btn--fantasma"
+            >Registrate y obtené {{ descuentoRegistro() }}% OFF</a
+          >
+        } @else {
+          <a routerLink="/proximamente" class="btn btn--fantasma">Próximos estrenos</a>
+        }
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="cartelera">
-  <h2>En cartelera</h2>
-  <div class="cartelera__grid">
-    @for (peli of peliculas; track peli.id) {
-      <article class="poster">
-        <div class="poster__img" [style.background]="peli.color"></div>
-        <div class="poster__info">
-          <h3>{{ peli.titulo }}</h3>
-          <span>{{ peli.genero }}</span>
+<section class="contenedor beneficios">
+  <article class="beneficio">
+    <span class="beneficio__icono" aria-hidden="true">🎟</span>
+    <h2>Butacas en vivo</h2>
+    <p>Mirá en tiempo real qué lugares quedan y elegí el tuyo: estándar, VIP o accesible.</p>
+  </article>
+  <article class="beneficio">
+    <span class="beneficio__icono" aria-hidden="true">🍿</span>
+    <h2>Un solo QR</h2>
+    <p>Entrada y candy bar en la misma compra. Mostrás el QR y listo.</p>
+  </article>
+  <article class="beneficio">
+    <span class="beneficio__icono" aria-hidden="true">★</span>
+    <h2>Sumá puntos</h2>
+    <p>Cada peso suma un punto. Canjealos por entradas o pochoclos.</p>
+  </article>
+</section>
+
+@if (cargando()) {
+  <section class="contenedor seccion">
+    <h2 class="titulo-seccion">Las más vistas</h2>
+    <div class="grilla-peliculas">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="esqueleto esqueleto--poster"></div>
+      }
+    </div>
+  </section>
+} @else if (error()) {
+  <section class="contenedor seccion">
+    <div class="vacio">
+      <strong>No pudimos cargar la cartelera.</strong>
+      <span>Revisá tu conexión y volvé a intentar.</span>
+    </div>
+  </section>
+} @else {
+  @if (masVendidas().length) {
+    <section class="contenedor seccion">
+      <h2 class="titulo-seccion">Las más vistas</h2>
+      <div class="podio">
+        @for (p of masVendidas(); track p.id; let i = $index) {
+          <app-tarjeta-pelicula [pelicula]="p" [puesto]="i + 1" />
+        }
+      </div>
+    </section>
+  }
+
+  <section class="contenedor seccion">
+    <div class="fila fila--entre encabezado">
+      <h2 class="titulo-seccion">En cartelera</h2>
+      <a routerLink="/cartelera" class="btn btn--fantasma btn--chico">Buscar y filtrar</a>
+    </div>
+    <div class="grilla-peliculas">
+      @for (p of enCartelera(); track p.id; let i = $index) {
+        <app-tarjeta-pelicula [pelicula]="p" />
+      } @empty {
+        <div class="vacio">Pronto vas a ver acá las películas en cartel.</div>
+      }
+    </div>
+  </section>
+
+  @if (proximamente().length) {
+    <section class="proximas">
+      <div class="contenedor seccion">
+        <div class="fila fila--entre encabezado">
+          <h2 class="titulo-seccion">Próximamente</h2>
+          <a routerLink="/proximamente" class="btn btn--fantasma btn--chico">Ver todos</a>
         </div>
-      </article>
-    }
-  </div>
-</section>
+        <div class="grilla-peliculas">
+          @for (p of proximamente(); track p.id; let i = $index) {
+            <app-tarjeta-pelicula [pelicula]="p" />
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (combos().length) {
+    <section class="contenedor seccion">
+      <h2 class="titulo-seccion">Combos de la casa</h2>
+      <div class="combos">
+        @for (c of combos(); track c.id; let i = $index) {
+          <article class="combo ticket">
+            <p class="combo__nombre">{{ c.nombre }}</p>
+            <p class="combo__detalle">{{ c.descripcion }}</p>
+            <p class="combo__precio">{{ c.precio | precio }}</p>
+          </article>
+        }
+      </div>
+      <p class="texto-suave nota">
+        Los combos se agregan al comprar la entrada y se retiran con el mismo QR.
+      </p>
+    </section>
+  }
+}

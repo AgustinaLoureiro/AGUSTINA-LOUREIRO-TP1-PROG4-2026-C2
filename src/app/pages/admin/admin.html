@@ -1,1 +1,116 @@
-<h2>PRUEBA ADMIN</h2>
+<aside class="lateral" [class.lateral--abierta]="menuAbierto()">
+  <a routerLink="/admin" class="lateral__marca">
+    <img src="/marca/isotipo-96.png" alt="" width="34" height="34" />
+    <span>
+      <strong>CINECORN</strong>
+    </span>
+  </a>
+
+  <nav class="lateral__nav" aria-label="Administración">
+    @for (s of secciones; track s.ruta) {
+      <a [routerLink]="s.ruta" routerLinkActive="activo" class="lateral__link">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path
+            [attr.d]="s.icono"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        {{ s.texto }}
+      </a>
+    }
+  </nav>
+
+  <div class="lateral__pie">
+    <a routerLink="/staff" class="lateral__link">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path
+          d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+        />
+      </svg>
+      Validar QR
+    </a>
+    <a routerLink="/" class="lateral__link">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path
+          d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+        />
+      </svg>
+      Ver sitio público
+    </a>
+  </div>
+</aside>
+
+@if (menuAbierto()) {
+  <div class="velo" (click)="menuAbierto.set(false)" aria-hidden="true"></div>
+}
+
+<div class="principal">
+  <header class="superior">
+    <button
+      type="button"
+      class="btn-icono hamburguesa"
+      aria-label="Menú"
+      (click)="menuAbierto.set(true)"
+    >
+      ☰
+    </button>
+    <span class="superior__seccion"
+      ><span class="punto" aria-hidden="true"></span>Panel de administración</span
+    >
+
+    <div class="perfil">
+      <button
+        type="button"
+        class="perfil__boton"
+        (click)="menuPerfil.set(!menuPerfil())"
+        [attr.aria-expanded]="menuPerfil()"
+        aria-haspopup="menu"
+      >
+        <span class="perfil__avatar" aria-hidden="true">{{ iniciales() }}</span>
+        <span class="perfil__texto">
+          <strong>{{ nombreCompleto() }}</strong>
+          <small>Administrador</small>
+        </span>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
+      </button>
+      @if (menuPerfil()) {
+        <div class="perfil__velo" (click)="menuPerfil.set(false)" aria-hidden="true"></div>
+        <div class="perfil__menu" role="menu">
+          <div class="perfil__cabecera">
+            <span class="perfil__avatar perfil__avatar--grande" aria-hidden="true">{{
+              iniciales()
+            }}</span>
+            <div>
+              <strong>{{ nombreCompleto() }}</strong>
+              <span class="mono">{{ auth.perfil()?.email }}</span>
+            </div>
+          </div>
+          <a routerLink="/perfil" role="menuitem" (click)="menuPerfil.set(false)">Mi cuenta</a>
+          <a routerLink="/staff" role="menuitem" (click)="menuPerfil.set(false)">Validar QR</a>
+          <a routerLink="/" role="menuitem" (click)="menuPerfil.set(false)">Ver sitio público</a>
+          <button type="button" role="menuitem" class="perfil__salir" (click)="salir()">
+            Cerrar sesión
+          </button>
+        </div>
+      }
+    </div>
+  </header>
+
+  <main class="contenido">
+    <router-outlet />
+  </main>
+</div>
+
+<app-dialogo-confirmacion />

@@ -1,0 +1,41 @@
+<div class="contenedor-tira">
+  @if (puedeIzquierda()) {
+    <button
+      type="button"
+      class="flecha flecha--izq"
+      aria-label="Días anteriores"
+      (click)="desplazar(-1)"
+    >
+      ‹
+    </button>
+  }
+  <div #tira class="tira" role="tablist" aria-label="Elegí el día" (scroll)="actualizarFlechas()">
+    @for (d of dias(); track d.iso) {
+      @let vacio = conContenido() !== null && !conContenido()!.has(d.iso);
+      <button
+        type="button"
+        role="tab"
+        class="dia"
+        [class.dia--activo]="d.iso === seleccionado()"
+        [class.dia--vacio]="vacio"
+        [attr.aria-selected]="d.iso === seleccionado()"
+        [disabled]="vacio"
+        (click)="elegir.emit(d.iso)"
+      >
+        <span class="dia__etiqueta">{{ d.etiqueta }}</span>
+        <span class="dia__numero">{{ d.numero }}</span>
+        <span class="dia__mes">{{ d.mes }}</span>
+      </button>
+    }
+  </div>
+  @if (puedeDerecha()) {
+    <button
+      type="button"
+      class="flecha flecha--der"
+      aria-label="Días siguientes"
+      (click)="desplazar(1)"
+    >
+      ›
+    </button>
+  }
+</div>

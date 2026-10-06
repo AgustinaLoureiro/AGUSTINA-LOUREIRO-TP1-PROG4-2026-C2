@@ -1,0 +1,65 @@
+.herramientas {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.orden {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.orden .input {
+  width: auto;
+}
+
+.buscar {
+  width: 220px;
+}
+
+/* El interruptor centrado con el resto de la fila */
+.tabla .interruptor {
+  vertical-align: middle;
+}
+
+@media (max-width: 760px) {
+  .herramientas {
+    flex-wrap: wrap;
+  }
+}
+
+.sin-corte {
+  white-space: nowrap;
+}
+
+.miniatura {
+  min-width: 40px;
+}
+
+/* Los tres botones en una sola fila */
+.acciones-tabla {
+  flex-wrap: nowrap;
+}
+
+/* Mismo ancho siempre, tenga 0 o 500 funciones */
+.btn-funciones {
+  width: 8.5rem;
+  justify-content: center;
+}
+
+/* Funciones de la película, desplegadas debajo de su fila */
+.fila--abierta td {
+  border-bottom-color: transparent;
+  background: var(--surface-2);
+}
+
+.fila-funciones td {
+  padding: 0.25rem 1rem 1rem;
+  background: var(--surface-2);
+}
+
+.acciones-tabla .btn[aria-expanded='true'] {
+  border-color: var(--ink);
+}

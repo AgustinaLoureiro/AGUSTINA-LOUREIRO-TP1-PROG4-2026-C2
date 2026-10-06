@@ -1,0 +1,121 @@
+<div class="adm-cabecera">
+  <div>
+    <h1>Registro de actividad</h1>
+    <p>Cambios y validaciones, con fecha, hora y responsable.</p>
+  </div>
+  <input
+    #busca
+    class="input buscador"
+    type="search"
+    placeholder="Buscar por email o elemento…"
+    (keydown.enter)="buscar(busca.value)"
+    (search)="buscar(busca.value)"
+    aria-label="Buscar en el registro"
+  />
+</div>
+
+<div class="segmentado filtros" role="group" aria-label="Filtrar">
+  @for (f of filtros; track f[0]) {
+    <button type="button" [attr.aria-pressed]="entidad() === f[0]" (click)="filtrar(f[0])">
+      {{ f[1] }}
+    </button>
+  }
+</div>
+
+@for (g of grupos(); track g.dia) {
+  <section class="adm-panel dia">
+    <h2 class="dia__titulo">
+      @if (g.titulo) {
+        {{ g.titulo }} <span>· {{ g.dia | date: "EEEE d 'de' MMMM" }}</span>
+      } @else {
+        {{ g.dia | date: "EEEE d 'de' MMMM" }}
+      }
+    </h2>
+    @for (a of g.eventos; track a.id) {
+      @let difs = cambios(a);
+      <article class="evento">
+        <time class="evento__hora mono" [title]="a.creado_en | tiempoRelativo">{{
+          a.creado_en | date: 'HH:mm'
+        }}</time>
+        <div class="evento__texto">
+          <p>
+            <strong>{{ quien(a) }}</strong> {{ frase(a) }}
+            @if (a.etiqueta) {
+              <span class="evento__objeto">{{ etiqueta(a) }}</span>
+            }
+          </p>
+          @if (difs.length) {
+            <ul class="cambios">
+              @for (c of difs; track c.campo) {
+                <li>
+                  <span>{{ c.campo }}</span> <s>{{ c.antes }}</s> → <strong>{{ c.despues }}</strong>
+                </li>
+              }
+            </ul>
+          } @else if (a.accion === 'programar') {
+            <p class="evento__resumen">
+              {{ $any(a.detalle)['creadas'] }} funciones creadas ·
+              {{ $any(a.detalle)['formato'] }} · horarios
+              {{ $any(a.detalle)['horarios']?.join(', ') }}
+              @if ($any(a.detalle)['no_creadas']) {
+                · {{ $any(a.detalle)['no_creadas'] }} sin lugar u omitidas
+              }
+            </p>
+          } @else if (a.accion === 'quitar') {
+            <p class="evento__resumen">
+              {{ $any(a.detalle)['eliminadas'] }} funciones quitadas
+              @if ($any(a.detalle)['conservadas_con_ventas']) {
+                · {{ $any(a.detalle)['conservadas_con_ventas'] }} conservadas por tener ventas
+              }
+            </p>
+          } @else if (datos(a).length) {
+            <button
+              type="button"
+              class="ver"
+              (click)="abierta.set(abierta() === a.id ? null : a.id)"
+            >
+              {{ abierta() === a.id ? 'Ocultar datos' : 'Ver datos' }}
+            </button>
+            @if (abierta() === a.id) {
+              <dl class="datos">
+                @for (d of datos(a); track d.campo) {
+                  <div>
+                    <dt>{{ d.campo }}</dt>
+                    <dd>{{ d.valor }}</dd>
+                  </div>
+                }
+              </dl>
+            }
+          }
+        </div>
+      </article>
+    }
+  </section>
+} @empty {
+  <div class="vacio">No hay actividad registrada con ese filtro.</div>
+}
+
+@if (total() > porPagina) {
+  <div class="fila fila--entre paginador">
+    <span class="texto-suave">{{ total() }} registros</span>
+    <div class="fila">
+      <button
+        type="button"
+        class="btn btn--chico"
+        [disabled]="pagina() === 0"
+        (click)="irA(pagina() - 1)"
+      >
+        ← Más nuevos
+      </button>
+      <span class="mono">{{ pagina() + 1 }} / {{ paginas() }}</span>
+      <button
+        type="button"
+        class="btn btn--chico"
+        [disabled]="pagina() + 1 >= paginas()"
+        (click)="irA(pagina() + 1)"
+      >
+        Más viejos →
+      </button>
+    </div>
+  </div>
+}

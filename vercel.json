@@ -1,8 +1,20 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/app-cine/browser",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\.).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/ngsw-worker.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/ngsw.json",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ]
 }

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="100%" r="90%">
+      <stop offset="0" stop-color="#5c0f09"/>
+      <stop offset="1" stop-color="#120c08"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="600" fill="url(#g)"/>
+  <g transform="translate(200 270)" fill="none" stroke="#f0b44c" stroke-width="6" stroke-linejoin="round">
+    <path d="M-70 -20 L-55 110 L55 110 L70 -20 Z"/>
+    <path d="M-35 -20 L-28 110 M0 -20 L0 110 M35 -20 L28 110"/>
+    <path d="M-78 -22 C-90 -60 -50 -80 -35 -62 C-30 -95 15 -98 18 -66 C35 -92 82 -70 70 -24"/>
+  </g>
+  <text x="200" y="470" fill="#f3e6cc" font-family="Bebas Neue, Arial Narrow, sans-serif" font-size="44" letter-spacing="6" text-anchor="middle">CINECORN</text>
+  <text x="200" y="505" fill="#a88b68" font-family="sans-serif" font-size="16" text-anchor="middle">Póster no disponible</text>
+</svg>

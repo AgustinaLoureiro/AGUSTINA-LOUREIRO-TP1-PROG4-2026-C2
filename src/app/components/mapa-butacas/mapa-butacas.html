@@ -1,0 +1,53 @@
+<div class="mapa">
+  <div class="mapa__scroll">
+    <div class="mapa__sala" [class.mapa__sala--edicion]="modo() === 'edicion'">
+      <div class="pantalla" aria-hidden="true"><span>PANTALLA</span></div>
+
+      @for (fila of filas; track fila.letra) {
+        <div
+          class="fila"
+          [class.fila--vip]="fila.tipo === 'vip'"
+          [class.fila--accesible]="fila.tipo === 'accesible'"
+        >
+          <span class="fila__letra">{{ fila.letra }}</span>
+          @for (bloque of fila.bloques; track $index) {
+            <div class="bloque" [style.--columnas]="bloque.length">
+              @for (b of bloque; track b.id) {
+                <button
+                  type="button"
+                  class="butaca"
+                  [class]="'butaca butaca--' + estado(b) + ' butaca--' + b.tipo"
+                  [disabled]="deshabilitada(b)"
+                  [attr.aria-pressed]="estado(b) === 'elegida'"
+                  [attr.aria-label]="descripcion(b)"
+                  [title]="descripcion(b)"
+                  (click)="clic(b)"
+                >
+                  <span class="butaca__num">{{ b.numero }}</span>
+                </button>
+              }
+            </div>
+          }
+          <span class="fila__letra">{{ fila.letra }}</span>
+        </div>
+        @if (fila.letra === 'I' || fila.letra === 'Q') {
+          <div class="separador" aria-hidden="true"></div>
+        }
+      }
+    </div>
+  </div>
+
+  <ul class="leyenda">
+    @if (modo() === 'compra') {
+      <li><span class="muestra butaca--libre"></span> Libre</li>
+      <li><span class="muestra butaca--elegida"></span> Tu elección</li>
+      <li><span class="muestra butaca--eligiendo"></span> Alguien la está eligiendo</li>
+      <li><span class="muestra butaca--ocupada"></span> Vendida</li>
+    } @else {
+      <li><span class="muestra butaca--libre"></span> Habilitada</li>
+      <li><span class="muestra butaca--inhabilitada"></span> Fuera de servicio</li>
+    }
+    <li><span class="muestra butaca--libre butaca--vip"></span> VIP (R · S · T)</li>
+    <li><span class="muestra butaca--libre butaca--accesible"></span> Accesible (fila J)</li>
+  </ul>
+</div>

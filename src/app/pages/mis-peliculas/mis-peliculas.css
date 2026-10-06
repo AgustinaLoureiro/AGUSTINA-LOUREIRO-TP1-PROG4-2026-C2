@@ -1,0 +1,110 @@
+.cabecera {
+  padding-block: clamp(2rem, 5vw, 3.25rem);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+
+.cabecera h1 {
+  font-size: clamp(2.4rem, 6vw, 3.8rem);
+  color: var(--primary);
+}
+
+.contador {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.contador span {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--primary);
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 190px), 1fr));
+  gap: 2rem 1.25rem;
+}
+
+.grilla .vacio {
+  grid-column: 1 / -1;
+}
+
+.vista h2 {
+  margin: 0.6rem 0 0.1rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.vista p {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.vista__poster {
+  position: relative;
+  display: block;
+  padding: 8px;
+  background: #f3e6cc;
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  transform: rotate(-1deg);
+}
+
+.vista:nth-child(even) .vista__poster {
+  transform: rotate(1.2deg);
+}
+
+.vista__poster img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+
+.vista__sello {
+  position: absolute;
+  right: -10px;
+  bottom: 18px;
+  display: grid;
+  justify-items: center;
+  width: 62px;
+  height: 62px;
+  align-content: center;
+  border-radius: 50%;
+  border: 2px dashed #f3e6cc;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1;
+  transform: rotate(-12deg);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.5);
+}
+
+.vista__sello small {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vista__veces {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  background: rgb(18 12 8 / 0.85);
+}
+
+.vista__calificacion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 1.2rem;
+}
+
+.vista__calificacion small {
+  font-size: 0.75rem;
+  color: var(--primary);
+}

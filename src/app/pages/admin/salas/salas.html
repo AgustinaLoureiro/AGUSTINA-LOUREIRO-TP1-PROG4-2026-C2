@@ -1,0 +1,129 @@
+<div class="adm-cabecera">
+  <div>
+    <h1>Salas y butacas</h1>
+    <p>Salas habilitadas y butacas fuera de servicio.</p>
+  </div>
+</div>
+
+<div class="salas">
+  <aside class="adm-panel lista">
+    <p class="adm-panel__titulo">Salas</p>
+    @for (s of salas(); track s.id) {
+      <div class="sala" [class.sala--elegida]="elegida()?.id === s.id">
+        <button type="button" class="sala__nombre" (click)="elegir(s)">
+          <strong>{{ s.nombre }}</strong>
+          <small class="sala__detalle">
+            {{ total - s.butacas_inhabilitadas.length }} butacas
+            @for (f of especiales(s); track f) {
+              <span class="badge">{{ f }}</span>
+            }
+          </small>
+        </button>
+        <label class="interruptor" [title]="s.activa ? 'Activa' : 'Inactiva'">
+          <input
+            type="checkbox"
+            [checked]="s.activa"
+            (change)="alternarActiva(s)"
+            [attr.aria-label]="'Activa: ' + s.nombre"
+          />
+          <span></span>
+        </label>
+      </div>
+    }
+    <form class="nueva" (submit)="$event.preventDefault(); crear()">
+      <p class="adm-panel__titulo">Nueva sala</p>
+      <label class="campo">
+        <span class="campo__label">Número</span>
+        <span class="nueva__nombre">
+          <span class="nueva__prefijo">Sala</span>
+          <input
+            class="input"
+            appSoloNumeros
+            maxlength="2"
+            [formControl]="nueva"
+            aria-label="Número de la nueva sala"
+          />
+        </span>
+        <app-errores-campo
+          [control]="nueva"
+          [mensajes]="{
+            pattern: 'Ingresá un número del 1 al 99.',
+            repetido: 'Ya existe una sala con ese número.',
+          }"
+        />
+      </label>
+      <div class="campo">
+        <span class="campo__label">Formatos que puede proyectar</span>
+        <div
+          class="segmentado segmentado--mono segmentado--lleno"
+          role="group"
+          aria-label="Formatos de la nueva sala"
+        >
+          @for (f of formatos; track f) {
+            <button
+              type="button"
+              [attr.aria-pressed]="formatosNueva().includes(f)"
+              [disabled]="f === '2D'"
+              [title]="f === '2D' ? 'Todas las salas proyectan 2D' : ''"
+              (click)="alternarFormatoNueva(f)"
+            >
+              {{ f }}
+            </button>
+          }
+        </div>
+      </div>
+      <button type="submit" class="btn btn--primario" [disabled]="creando()">Agregar sala</button>
+    </form>
+  </aside>
+
+  <section class="adm-panel">
+    @if (elegida(); as s) {
+      <div class="fila fila--entre">
+        <h2 class="sala-titulo">{{ s.nombre }}</h2>
+        <button type="button" class="btn btn--peligro btn--chico" (click)="eliminar(s)">
+          Eliminar sala
+        </button>
+      </div>
+
+      <div class="campo formatos-sala">
+        <span class="campo__label">Formatos que puede proyectar</span>
+        <div class="segmentado segmentado--mono" role="group" aria-label="Formatos de la sala">
+          @for (f of formatos; track f) {
+            <button
+              type="button"
+              [attr.aria-pressed]="(s.formatos ?? ['2D']).includes(f)"
+              [disabled]="f === '2D' || guardandoFormato()"
+              [title]="f === '2D' ? 'Todas las salas proyectan 2D' : ''"
+              (click)="alternarFormato(s, f)"
+            >
+              {{ f }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="fila fila--entre">
+        <p class="adm-panel__titulo">Butacas</p>
+        <div class="fila">
+          <span class="texto-suave">{{ inhabilitadas().length }} fuera de servicio</span>
+          <button
+            type="button"
+            class="btn btn--primario btn--chico"
+            [disabled]="!hayCambios() || guardando()"
+            (click)="guardarDistribucion()"
+          >
+            Guardar cambios
+          </button>
+        </div>
+      </div>
+      <p class="campo__ayuda">Tocá una butaca para marcarla fuera de servicio.</p>
+      <div class="mapa-oscuro">
+        <app-mapa-butacas
+          modo="edicion"
+          [inhabilitadas]="inhabilitadas()"
+          (alternar)="alternarButaca($event)"
+        />
+      </div>
+    }
+  </section>
+</div>

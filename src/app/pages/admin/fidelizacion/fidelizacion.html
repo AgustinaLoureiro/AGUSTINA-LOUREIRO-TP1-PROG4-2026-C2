@@ -1,0 +1,342 @@
+<div class="adm-cabecera">
+  <div>
+    <h1>Precios y beneficios</h1>
+    <p>Precios, descuentos, cupones y canjes por puntos.</p>
+  </div>
+</div>
+
+<div class="adm-grilla">
+  <form class="adm-panel" [formGroup]="config" (ngSubmit)="guardarConfig()">
+    <p class="adm-panel__titulo">Reglas generales</p>
+    <div class="grilla-form">
+      <div class="campo">
+        <label for="primera">Descuento primera compra (%)</label>
+        <input
+          id="primera"
+          type="number"
+          appSoloNumeros
+          min="0"
+          max="100"
+          formControlName="descuento_primera_compra"
+        />
+        <span class="campo__ayuda">Beneficio por registrarse. 0 lo desactiva.</span>
+        <app-errores-campo [control]="config.controls.descuento_primera_compra" />
+      </div>
+      <div class="campo">
+        <label for="vip">Recargo butaca VIP ($)</label>
+        <input id="vip" type="number" appSoloNumeros min="0" formControlName="recargo_vip" />
+        <app-errores-campo [control]="config.controls.recargo_vip" />
+      </div>
+      <div class="campo">
+        <label for="puntos">Puntos por cada $1</label>
+        <input
+          id="puntos"
+          type="number"
+          appSoloNumeros
+          [decimales]="true"
+          min="0"
+          step="0.1"
+          formControlName="puntos_por_peso"
+        />
+        <app-errores-campo [control]="config.controls.puntos_por_peso" />
+      </div>
+      <div class="campo">
+        <label for="horas">Cancelación hasta (horas antes)</label>
+        <input
+          id="horas"
+          type="number"
+          appSoloNumeros
+          min="0"
+          max="72"
+          formControlName="horas_limite_cancelacion"
+        />
+        <app-errores-campo [control]="config.controls.horas_limite_cancelacion" />
+      </div>
+      <div class="campo">
+        <label for="max">Máximo de entradas por compra</label>
+        <input
+          id="max"
+          type="number"
+          appSoloNumeros
+          min="1"
+          max="30"
+          formControlName="max_entradas_por_compra"
+        />
+        <app-errores-campo [control]="config.controls.max_entradas_por_compra" />
+      </div>
+    </div>
+    <button type="submit" class="btn btn--primario" [disabled]="config.pristine">
+      Guardar reglas
+    </button>
+  </form>
+
+  <div class="adm-panel">
+    <p class="adm-panel__titulo">Precio base por formato</p>
+    <table class="tabla">
+      <tbody>
+        @for (f of formatos(); track f.codigo) {
+          <tr>
+            <td>
+              <strong>{{ f.codigo }}</strong
+              ><br /><small class="texto-suave">{{ f.nombre }}</small>
+            </td>
+            <td class="num" style="width: 150px">
+              <input
+                #precio
+                class="input"
+                type="number"
+                appSoloNumeros
+                min="1"
+                [value]="f.precio"
+                [attr.aria-label]="'Precio ' + f.codigo"
+                (blur)="guardarPrecio(f, precio)"
+                (keydown.enter)="precio.blur()"
+              />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <p class="campo__ayuda">Precio sugerido al programar funciones.</p>
+  </div>
+</div>
+
+<div class="adm-panel">
+  <div class="fila fila--entre">
+    <p class="adm-panel__titulo">Cupones</p>
+    <button type="button" class="btn btn--chico" (click)="abrirCupon()">+ Cupón</button>
+  </div>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Descuento</th>
+          <th>Condición</th>
+          <th>Vigencia</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of cupones(); track c.id) {
+          <tr>
+            <td class="mono">
+              <strong>{{ c.codigo }}</strong
+              ><br /><small class="texto-suave">{{ c.descripcion }}</small>
+            </td>
+            <td class="mono">{{ c.porcentaje }}%</td>
+            <td>
+              {{ c.edad_minima ? 'Mayores de ' + c.edad_minima + ' años (registrados)' : 'Todos' }}
+            </td>
+            <td class="mono">
+              {{ c.desde ? (c.desde | date: 'dd/MM/yy') : '—' }} →
+              {{ c.hasta ? (c.hasta | date: 'dd/MM/yy') : '—' }}
+            </td>
+            <td>
+              <span class="badge" [class.badge--ok]="c.activo">{{
+                c.activo ? 'Activo' : 'Inactivo'
+              }}</span>
+            </td>
+            <td>
+              <div class="acciones-tabla">
+                <button type="button" class="btn btn--chico" (click)="abrirCupon(c)">Editar</button>
+                <button
+                  type="button"
+                  class="btn btn--peligro btn--chico"
+                  (click)="eliminarCupon(c)"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="texto-suave">No hay cupones.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="campo__ayuda">
+    Un uso por persona. No se suma al descuento de primera compra: se aplica el mayor.
+  </p>
+</div>
+
+<div class="adm-panel">
+  <div class="fila fila--entre">
+    <p class="adm-panel__titulo">Canjes por puntos</p>
+    <button type="button" class="btn btn--chico" (click)="abrirRecompensa()">+ Recompensa</button>
+  </div>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Recompensa</th>
+          <th>Tipo</th>
+          <th class="num">Puntos</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of recompensas(); track r.id) {
+          <tr>
+            <td>
+              <strong>{{ r.nombre }}</strong>
+            </td>
+            <td>
+              {{
+                r.tipo === 'entrada'
+                  ? 'Entrada gratis'
+                  : 'Producto: ' + nombreProducto(r.producto_id)
+              }}
+            </td>
+            <td class="num">{{ r.puntos }}</td>
+            <td>
+              <span class="badge" [class.badge--ok]="r.activa">{{
+                r.activa ? 'Activa' : 'Inactiva'
+              }}</span>
+            </td>
+            <td>
+              <div class="acciones-tabla">
+                <button type="button" class="btn btn--chico" (click)="abrirRecompensa(r)">
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--peligro btn--chico"
+                  (click)="eliminarRecompensa(r)"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (editandoCupon() !== null) {
+  <div class="modal-admin" role="dialog" aria-label="Cupón">
+    <form class="modal-admin__caja" [formGroup]="formCupon" (ngSubmit)="guardarCupon()">
+      <h2>{{ editandoCupon() === 'nuevo' ? 'Nuevo cupón' : 'Editar cupón' }}</h2>
+      <div class="grilla-form">
+        <div class="campo">
+          <label for="codigo">Código</label>
+          <input id="codigo" formControlName="codigo" style="text-transform: uppercase" />
+          <app-errores-campo
+            [control]="formCupon.controls.codigo"
+            [mensajes]="{ pattern: '4 a 20 letras o números, sin espacios.' }"
+          />
+        </div>
+        <div class="campo">
+          <label for="porcentaje">Descuento (%)</label>
+          <input
+            id="porcentaje"
+            type="number"
+            appSoloNumeros
+            min="1"
+            max="100"
+            formControlName="porcentaje"
+          />
+          <app-errores-campo [control]="formCupon.controls.porcentaje" />
+        </div>
+      </div>
+      <div class="campo">
+        <label for="c-desc">Descripción interna</label>
+        <input id="c-desc" formControlName="descripcion" />
+      </div>
+      <div class="campo">
+        <label for="edad">Solo para mayores de… (años, opcional)</label>
+        <input
+          id="edad"
+          type="number"
+          appSoloNumeros
+          min="1"
+          max="120"
+          formControlName="edad_minima"
+          placeholder="Ej: 50"
+        />
+        <span class="campo__ayuda"
+          >Se valida con la fecha de nacimiento del usuario registrado.</span
+        >
+      </div>
+      <div class="grilla-form">
+        <app-campo-fecha
+          [control]="formCupon.controls.desde"
+          etiqueta="Válido desde (opcional)"
+          idCampo="c-desde"
+        />
+        <app-campo-fecha
+          [control]="formCupon.controls.hasta"
+          etiqueta="Válido hasta (opcional)"
+          idCampo="c-hasta"
+        />
+      </div>
+      <label class="check"><input type="checkbox" formControlName="activo" /> Activo</label>
+      <div class="fila" style="justify-content: flex-end; margin-top: 1.25rem">
+        <button type="button" class="btn" (click)="editandoCupon.set(null)">Cancelar</button>
+        <button type="submit" class="btn btn--primario">Guardar</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (editandoRecompensa() !== null) {
+  <div class="modal-admin" role="dialog" aria-label="Recompensa">
+    <form class="modal-admin__caja" [formGroup]="formRecompensa" (ngSubmit)="guardarRecompensa()">
+      <h2>{{ editandoRecompensa() === 'nuevo' ? 'Nueva recompensa' : 'Editar recompensa' }}</h2>
+      <div class="campo">
+        <label for="r-nombre">Nombre</label>
+        <input id="r-nombre" formControlName="nombre" />
+        <app-errores-campo [control]="formRecompensa.controls.nombre" />
+      </div>
+      <div class="campo">
+        <span class="campo__label">Se canjea por</span>
+        <div class="chips">
+          <button
+            type="button"
+            class="chip"
+            [attr.aria-pressed]="formRecompensa.controls.tipo.value === 'entrada'"
+            (click)="formRecompensa.controls.tipo.setValue('entrada')"
+          >
+            Entrada gratis
+          </button>
+          <button
+            type="button"
+            class="chip"
+            [attr.aria-pressed]="formRecompensa.controls.tipo.value === 'producto'"
+            (click)="formRecompensa.controls.tipo.setValue('producto')"
+          >
+            Producto del candy
+          </button>
+        </div>
+      </div>
+      @if (formRecompensa.controls.tipo.value === 'producto') {
+        <div class="campo">
+          <label for="r-prod">Producto</label>
+          <select id="r-prod" formControlName="producto_id">
+            <option [ngValue]="null" disabled>Elegí…</option>
+            @for (p of productos(); track p.id) {
+              <option [ngValue]="p.id">{{ p.nombre }} ({{ p.precio | precio }})</option>
+            }
+          </select>
+        </div>
+      }
+      <div class="campo">
+        <label for="r-puntos">Puntos necesarios</label>
+        <input id="r-puntos" type="number" appSoloNumeros min="1" formControlName="puntos" />
+        <app-errores-campo [control]="formRecompensa.controls.puntos" />
+      </div>
+      <label class="check"><input type="checkbox" formControlName="activa" /> Activa</label>
+      <div class="fila" style="justify-content: flex-end; margin-top: 1.25rem">
+        <button type="button" class="btn" (click)="editandoRecompensa.set(null)">Cancelar</button>
+        <button type="submit" class="btn btn--primario">Guardar</button>
+      </div>
+    </form>
+  </div>
+}

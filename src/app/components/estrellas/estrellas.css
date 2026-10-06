@@ -1,0 +1,38 @@
+.estrellas {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.estrellas--grande {
+  font-size: 2rem;
+  gap: 4px;
+}
+
+.estrella {
+  position: relative;
+  display: inline-block;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+}
+
+.estrellas--editable .estrella {
+  cursor: pointer;
+}
+
+.estrella__fondo {
+  color: color-mix(in srgb, var(--muted) 45%, transparent);
+}
+
+.estrella__relleno {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: var(--primary);
+  white-space: nowrap;
+  text-shadow: 0 0 8px rgb(240 180 76 / 0.45);
+}

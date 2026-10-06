@@ -1,0 +1,206 @@
+/* El tamaño de cada butaca se calcula según el ancho disponible (container query):
+   una fila ocupa 33,6 butacas + pasillos, así la sala entra entera sin scroll. */
+.mapa {
+  min-width: 0;
+}
+
+.mapa__scroll {
+  container-type: inline-size;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mapa__sala {
+  --s: clamp(11px, calc((100cqi - 90px) / 33.6), 26px);
+  --pasillo: calc(var(--s) * 0.9);
+  display: grid;
+  gap: 5px;
+  width: max-content;
+  margin-inline: auto;
+  padding: 0.5rem 0.25rem;
+}
+
+.pantalla {
+  height: 34px;
+  margin: 0 calc(var(--s) * 1.5) 1.25rem;
+  border-top: 4px solid var(--primary);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  box-shadow: 0 -10px 30px -6px var(--primary);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.6em;
+  color: var(--muted);
+  padding-top: 6px;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns:
+    var(--s) calc(var(--s) * 4 + 9px) calc(var(--s) * 20 + 57px) calc(var(--s) * 4 + 9px)
+    var(--s);
+  column-gap: var(--pasillo);
+  align-items: center;
+}
+
+.fila__letra {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.fila--vip .fila__letra {
+  color: var(--vip);
+  font-weight: 700;
+}
+
+.fila--accesible .fila__letra {
+  color: var(--accesible);
+  font-weight: 700;
+}
+
+.bloque {
+  display: grid;
+  grid-template-columns: repeat(var(--columnas), 1fr);
+  gap: 3px;
+}
+
+.separador {
+  height: 6px;
+}
+
+.butaca {
+  position: relative;
+  height: var(--s);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px 6px 3px 3px;
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.butaca__num {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  opacity: 0;
+}
+
+.butaca:hover:not(:disabled) {
+  border-color: var(--primary);
+}
+
+.butaca:hover .butaca__num,
+.butaca--elegida .butaca__num {
+  opacity: 1;
+}
+
+.butaca--vip {
+  border-color: color-mix(in srgb, var(--vip) 70%, transparent);
+  background: color-mix(in srgb, var(--vip) 16%, var(--surface-2));
+}
+
+.butaca--accesible {
+  border-color: var(--accesible);
+  background: color-mix(in srgb, var(--accesible) 22%, var(--surface-2));
+  border-radius: 8px;
+}
+
+.butaca--accesible::after {
+  content: '♿';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--s) * 0.55);
+  color: var(--accesible);
+}
+
+.butaca--accesible:hover::after,
+.butaca--accesible.butaca--elegida::after {
+  content: none;
+}
+
+.butaca--elegida {
+  background: var(--primary);
+  border-color: var(--primary-hover);
+  color: var(--primary-ink);
+  box-shadow: 0 0 12px -2px var(--primary);
+}
+
+.butaca--eligiendo {
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--primary) 35%, transparent) 0 3px,
+    transparent 3px 6px
+  );
+  border-style: dashed;
+  border-color: var(--primary);
+}
+
+.butaca--ocupada {
+  background: var(--bg);
+  border-color: var(--bg);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.butaca--ocupada::before {
+  content: '';
+  position: absolute;
+  inset: 30%;
+  background:
+    linear-gradient(45deg, transparent 42%, var(--muted) 42% 58%, transparent 58%),
+    linear-gradient(-45deg, transparent 42%, var(--muted) 42% 58%, transparent 58%);
+}
+
+.butaca--ocupada.butaca--accesible::after {
+  content: none;
+}
+
+.butaca--inhabilitada {
+  background: transparent;
+  border: 1px dashed var(--line);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mapa__sala--edicion .butaca--inhabilitada {
+  cursor: pointer;
+  opacity: 0.8;
+  border-color: var(--error);
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.25rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.muestra {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 16px;
+  border: 1px solid var(--line);
+  border-radius: 5px 5px 2px 2px;
+  background: var(--surface-2);
+}
+
+.muestra.butaca--accesible::after {
+  font-size: 10px;
+}

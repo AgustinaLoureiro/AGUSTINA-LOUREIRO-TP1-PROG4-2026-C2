@@ -1,0 +1,282 @@
+<div class="adm-cabecera">
+  <div>
+    <h1>{{ id() ? 'Editar película' : 'Nueva película' }}</h1>
+  </div>
+  <div class="fila">
+    <a routerLink="/admin/peliculas" class="btn">Cancelar</a>
+    <button type="button" class="btn btn--primario" [disabled]="guardando()" (click)="guardar()">
+      {{ guardando() ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</div>
+
+<div class="adm-panel importar">
+  <p class="adm-panel__titulo">Importar desde TMDB</p>
+  <div class="importar__buscador">
+    <input
+      class="input"
+      placeholder="Escribí el título para traer póster, sinopsis, duración y géneros…"
+      [formControl]="busquedaTmdb"
+      aria-label="Buscar en TMDB"
+    />
+    @if (buscandoTmdb()) {
+      <span class="texto-suave">Buscando…</span>
+    }
+  </div>
+  @if (resultadosTmdb().length) {
+    <ul class="resultados">
+      @for (r of resultadosTmdb(); track r.id) {
+        <li>
+          <button type="button" (click)="importar(r)">
+            <img
+              class="miniatura"
+              [src]="r.poster_path ? 'https://image.tmdb.org/t/p/w92' + r.poster_path : ''"
+              alt=""
+              appImagenRespaldo
+            />
+            <span
+              ><strong>{{ r.title }}</strong
+              ><small>{{ r.release_date?.slice(0, 4) || 's/f' }}</small></span
+            >
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+<form class="formulario" [formGroup]="form" (ngSubmit)="guardar()">
+  <div class="adm-panel">
+    <p class="adm-panel__titulo">Datos de la película</p>
+    <div class="campo">
+      <label for="titulo">Título</label>
+      <input id="titulo" formControlName="titulo" />
+      <app-errores-campo [control]="form.controls.titulo" />
+    </div>
+    <div class="campo">
+      <label for="sinopsis">Sinopsis</label>
+      <textarea id="sinopsis" rows="5" formControlName="sinopsis"></textarea>
+      <app-errores-campo
+        [control]="form.controls.sinopsis"
+        [mensajes]="{ minlength: 'Escribí una sinopsis de al menos 40 caracteres.' }"
+      />
+    </div>
+    <div class="grilla-form">
+      <div class="campo">
+        <label for="duracion">Duración (minutos)</label>
+        <input
+          id="duracion"
+          type="number"
+          appSoloNumeros
+          min="1"
+          max="400"
+          formControlName="duracion_min"
+        />
+        <span class="campo__ayuda"
+          >+{{ limpieza() }} min de limpieza: {{ minutosEnSala }} min en sala</span
+        >
+        <app-errores-campo [control]="form.controls.duracion_min" />
+      </div>
+      <app-campo-fecha
+        [control]="form.controls.fecha_estreno"
+        etiqueta="Fecha de estreno"
+        idCampo="estreno"
+        [atajos]="atajos"
+      >
+        <app-errores-campo [control]="form.controls.fecha_estreno" />
+        @if (estrenoNoEsJueves) {
+          <span class="campo__ayuda aviso-jueves"
+            >Ojo: no es jueves, el día habitual de estreno.</span
+          >
+        }
+      </app-campo-fecha>
+    </div>
+
+    <div class="campo">
+      <span class="campo__label">Restricción de edad</span>
+      <div class="segmentado" role="group" aria-label="Restricción de edad">
+        @for (c of clasificaciones; track c) {
+          <button
+            type="button"
+            [attr.aria-pressed]="form.controls.clasificacion.value === c"
+            (click)="form.controls.clasificacion.setValue(c); form.markAsDirty()"
+          >
+            {{ c }}
+          </button>
+        }
+      </div>
+      <span class="campo__ayuda">Los menores de esa edad no pueden comprar.</span>
+    </div>
+
+    <div class="campo">
+      <span class="campo__label">Géneros</span>
+      <div class="chips">
+        @for (g of generos(); track g.id) {
+          <button
+            type="button"
+            class="chip"
+            [attr.aria-pressed]="generosElegidos().has(g.id)"
+            (click)="alternarGenero(g.id)"
+          >
+            {{ g.nombre }}
+          </button>
+        }
+      </div>
+      <div class="nuevo-genero">
+        <input
+          class="input"
+          placeholder="Otro género…"
+          [formControl]="nuevoGenero"
+          aria-label="Nuevo género"
+          (keydown.enter)="$event.preventDefault(); agregarGenero()"
+        />
+        <button
+          type="button"
+          class="btn btn--chico"
+          [disabled]="!nuevoGenero.value.trim()"
+          (click)="agregarGenero()"
+        >
+          Agregar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="columna">
+    <div class="adm-panel">
+      <p class="adm-panel__titulo">Imágenes y tráiler</p>
+      <div class="imagenes">
+        <div class="imagen">
+          <span class="campo__label">Póster (vertical)</span>
+          <img
+            class="imagen__poster"
+            [src]="form.controls.poster_url.value"
+            alt="Vista previa del póster"
+            appImagenRespaldo
+          />
+          <div class="imagen__acciones">
+            <label class="btn btn--chico subir">
+              {{
+                subiendo() === 'poster'
+                  ? 'Subiendo…'
+                  : form.controls.poster_url.value
+                    ? 'Cambiar'
+                    : 'Subir póster'
+              }}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                (change)="subir($event, 'poster')"
+                hidden
+              />
+            </label>
+            @if (form.controls.poster_url.value) {
+              <button type="button" class="btn btn--chico" (click)="quitarImagen('poster')">
+                Quitar
+              </button>
+            }
+          </div>
+          @if (form.controls.poster_url.touched && form.controls.poster_url.invalid) {
+            <span class="campo__error">Subí el póster de la película.</span>
+          }
+        </div>
+        <div class="imagen">
+          <span class="campo__label">Fondo (horizontal, opcional)</span>
+          @if (form.controls.fondo_url.value; as fondo) {
+            <img class="imagen__fondo" [src]="fondo" alt="Vista previa del fondo" />
+          } @else {
+            <div class="imagen__fondo imagen__vacia">Sin fondo: se usa el póster</div>
+          }
+          <div class="imagen__acciones">
+            <label class="btn btn--chico subir">
+              {{
+                subiendo() === 'fondo'
+                  ? 'Subiendo…'
+                  : form.controls.fondo_url.value
+                    ? 'Cambiar'
+                    : 'Subir fondo'
+              }}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                (change)="subir($event, 'fondo')"
+                hidden
+              />
+            </label>
+            @if (form.controls.fondo_url.value) {
+              <button type="button" class="btn btn--chico" (click)="quitarImagen('fondo')">
+                Quitar
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="trailer">Tráiler en YouTube (opcional)</label>
+        <input
+          id="trailer"
+          formControlName="trailer_youtube"
+          placeholder="https://www.youtube.com/watch?v=…"
+        />
+        <app-errores-campo
+          [control]="form.controls.trailer_youtube"
+          [mensajes]="{ trailer: 'Pegá el link del video de YouTube.' }"
+        />
+      </div>
+    </div>
+
+    <div class="adm-panel">
+      <p class="adm-panel__titulo">Publicación y preventa</p>
+      <label class="fila interruptor-fila">
+        <span class="interruptor"
+          ><input type="checkbox" formControlName="visible" /><span></span
+        ></span>
+        Visible en el sitio
+      </label>
+      <p class="campo__ayuda publicacion-ayuda">
+        Se activa sola al programarle funciones y se desactiva cuando se queda sin funciones. Podés
+        cambiarla a mano, por ejemplo para mostrarla en Próximamente antes de programarla.
+      </p>
+      <label class="fila interruptor-fila">
+        <span class="interruptor"
+          ><input type="checkbox" formControlName="preventa_habilitada" /><span></span
+        ></span>
+        Habilitar preventa con precio especial
+      </label>
+      @if (form.controls.preventa_habilitada.value) {
+        <div class="grilla-form">
+          <div class="campo">
+            <label for="dias">Días antes del estreno</label>
+            <input
+              id="dias"
+              type="number"
+              appSoloNumeros
+              min="1"
+              max="60"
+              formControlName="preventa_dias"
+            />
+            <app-errores-campo [control]="form.controls.preventa_dias" />
+          </div>
+          <div class="campo">
+            <label for="descuento">Descuento de preventa (%)</label>
+            <input
+              id="descuento"
+              type="number"
+              appSoloNumeros
+              min="0"
+              max="90"
+              formControlName="preventa_descuento"
+            />
+            <app-errores-campo [control]="form.controls.preventa_descuento" />
+          </div>
+        </div>
+        <p class="campo__ayuda">
+          Venta anticipada {{ form.controls.preventa_dias.value }} días antes, con
+          {{ form.controls.preventa_descuento.value }}% off hasta el estreno.
+        </p>
+      } @else {
+        <p class="campo__ayuda">La venta abre el día del estreno.</p>
+      }
+    </div>
+  </div>
+</form>

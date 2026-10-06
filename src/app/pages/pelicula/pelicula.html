@@ -1,0 +1,229 @@
+@if (cargando()) {
+  <div class="contenedor" style="padding-top: 3rem">
+    <div class="esqueleto" style="height: 380px"></div>
+  </div>
+} @else if (pelicula(); as p) {
+  <section class="portada" [style.--fondo]="p.fondo_url ? 'url(' + p.fondo_url + ')' : 'none'">
+    <div class="contenedor portada__interior">
+      <img
+        class="portada__poster"
+        [src]="p.poster_url"
+        [alt]="'Póster de ' + p.titulo"
+        appImagenRespaldo
+      />
+      <div class="portada__info">
+        <div class="fila badges">
+          <span class="badge" [class.badge--rojo]="p.clasificacion !== 'ATP'">{{
+            p.clasificacion
+          }}</span>
+          @if (p.en_preventa) {
+            <span class="badge badge--oro">Preventa · {{ p.preventa_descuento }}% off</span>
+          }
+          @if (p.proximamente) {
+            <span class="badge">Estreno {{ p.fecha_estreno | date: "d 'de' MMMM" }}</span>
+          }
+        </div>
+        <h1>{{ p.titulo }}</h1>
+        <p class="meta">{{ p.duracion_min | duracion }} · {{ p.generos.join(' · ') }}</p>
+
+        <div class="puntaje">
+          @if (p.cantidad_resenas > 0) {
+            <span class="puntaje__numero">{{ p.promedio }}</span>
+            <div>
+              <app-estrellas [valor]="p.promedio" />
+              <small
+                >{{ p.cantidad_resenas }}
+                {{ p.cantidad_resenas === 1 ? 'reseña' : 'reseñas' }}</small
+              >
+            </div>
+          } @else {
+            <small class="texto-suave">Todavía sin reseñas</small>
+          }
+        </div>
+
+        <p class="sinopsis">{{ p.sinopsis }}</p>
+
+        @if (p.clasificacion !== 'ATP') {
+          <p class="aviso aviso--error">
+            {{
+              p.clasificacion === '+18'
+                ? 'Apta para mayores de 18 años. Se solicitará DNI en el ingreso.'
+                : 'Apta para mayores de 13 años. Menores de 13 no pueden ingresar; debe asistir un adulto responsable.'
+            }}
+          </p>
+        }
+
+        <div class="fila">
+          <a href="#funciones" class="btn btn--primario">{{
+            ventaAbierta() ? 'Ver funciones' : 'Ver estreno'
+          }}</a>
+          @if (p.trailer_youtube) {
+            <button type="button" class="btn btn--fantasma" (click)="verTrailer.set(true)">
+              ▶ Ver tráiler
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  @if (verTrailer() && (p.trailer_youtube | youtube); as url) {
+    <div class="modal" role="dialog" aria-label="Tráiler" (click)="verTrailer.set(false)">
+      <div class="modal__video">
+        <iframe
+          [src]="url"
+          title="Tráiler"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </div>
+      <button type="button" class="btn" (click)="verTrailer.set(false)">Cerrar</button>
+    </div>
+  }
+
+  <section class="contenedor bloque" id="funciones">
+    <h2 class="titulo-seccion">Funciones</h2>
+
+    @if (ventaAbierta()) {
+      <app-tira-dias
+        [dias]="tira()"
+        [seleccionado]="dia()"
+        [conContenido]="diasConFunciones()"
+        (elegir)="dia.set($event)"
+      />
+
+      <div class="grupos">
+        @for (g of grupos(); track g.clave) {
+          <div class="grupo">
+            <div class="grupo__titulo">
+              <span class="grupo__formato">{{ g.formato }}</span>
+              <span>{{ g.idioma | idioma }}</span>
+            </div>
+            <div class="horarios">
+              @for (f of g.funciones; track f.id) {
+                <a class="horario" [routerLink]="['/comprar', f.id]">
+                  <strong>{{ f.inicio | date: 'HH:mm' }}</strong>
+                  <small>{{ f.salas?.nombre }} · {{ f.precio | precio }}</small>
+                </a>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div class="vacio">No hay funciones para este día.</div>
+        }
+      </div>
+      @if (p.en_preventa) {
+        <p class="texto-suave">
+          El precio de preventa se aplica al pagar hasta el
+          {{ p.fecha_estreno | date: "d 'de' MMMM" }}.
+        </p>
+      }
+    } @else {
+      <div class="vacio venta-cerrada">
+        @if (p.tiene_funciones) {
+          <strong
+            >La venta abre {{ p.venta_desde | tiempoRelativo }} ({{
+              p.venta_desde | date: "EEEE d 'de' MMMM"
+            }}).</strong
+          >
+        } @else {
+          <strong>Todavía no hay funciones programadas.</strong>
+        }
+        <button
+          type="button"
+          class="btn"
+          [class.btn--primario]="!notis.alertas().has(p.id)"
+          (click)="alerta()"
+        >
+          {{
+            notis.alertas().has(p.id) ? '🔔 Alerta activada' : 'Avisame cuando salgan las entradas'
+          }}
+        </button>
+      </div>
+    }
+  </section>
+
+  <section class="contenedor bloque" id="resenas">
+    <h2 class="titulo-seccion">Reseñas del público</h2>
+
+    <div class="resenas">
+      <aside class="resumen tarjeta">
+        <p class="resumen__numero">{{ p.cantidad_resenas ? p.promedio : '–' }}</p>
+        <app-estrellas [valor]="p.promedio" tamanio="grande" />
+        <p class="texto-suave">
+          {{ resenas().length }} {{ resenas().length === 1 ? 'opinión' : 'opiniones' }}
+        </p>
+        <ul class="barras">
+          @for (d of distribucion(); track d.estrellas) {
+            <li>
+              <span>{{ d.estrellas }}★</span>
+              <span class="barra"><span [style.width.%]="d.porcentaje"></span></span>
+            </li>
+          }
+        </ul>
+      </aside>
+
+      <div class="pila">
+        @if (auth.logueado()) {
+          <form class="tarjeta form-resena" (submit)="$event.preventDefault(); guardarResena()">
+            <p class="form-resena__titulo">
+              {{ miResena() ? 'Tu reseña' : '¿La viste? Calificala' }}
+            </p>
+            <app-estrellas
+              [valor]="estrellas()"
+              [editable]="true"
+              tamanio="grande"
+              (cambio)="estrellas.set($event)"
+            />
+            <div class="campo">
+              <label for="comentario" class="sr-only">Comentario</label>
+              <textarea
+                id="comentario"
+                maxlength="280"
+                placeholder="Contá en pocas palabras qué te pareció (opcional)"
+                [formControl]="comentario"
+              ></textarea>
+              <span class="campo__ayuda">{{ comentario.value.length }}/280</span>
+            </div>
+            <div class="fila">
+              <button
+                type="submit"
+                class="btn btn--primario btn--chico"
+                [disabled]="!estrellas() || guardando()"
+              >
+                {{ miResena() ? 'Actualizar' : 'Publicar' }}
+              </button>
+              @if (miResena()) {
+                <button type="button" class="btn btn--peligro btn--chico" (click)="borrarResena()">
+                  Eliminar
+                </button>
+              }
+            </div>
+          </form>
+        } @else {
+          <p class="aviso">
+            <span
+              ><a routerLink="/ingresar" [queryParams]="{ volver: '/pelicula/' + p.id }">Ingresá</a>
+              para dejar tu reseña.</span
+            >
+          </p>
+        }
+
+        @for (r of resenas(); track r.id) {
+          <article class="resena">
+            <div class="fila fila--entre">
+              <strong>{{ r.autor || 'Espectador' }}</strong>
+              <small class="texto-suave">{{ r.creado_en | tiempoRelativo }}</small>
+            </div>
+            <app-estrellas [valor]="r.estrellas" />
+            @if (r.comentario) {
+              <p>{{ r.comentario }}</p>
+            }
+          </article>
+        } @empty {
+          <p class="texto-suave">Sé la primera persona en opinar.</p>
+        }
+      </div>
+    </div>
+  </section>
+}

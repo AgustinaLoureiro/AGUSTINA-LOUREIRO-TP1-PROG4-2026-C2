@@ -1,0 +1,68 @@
+@if (cargando() && !tandas().length) {
+  <p class="texto-suave">Cargando funciones…</p>
+} @else if (!tandas().length) {
+  <div class="programaciones__vacio">
+    <span class="texto-suave">No tiene funciones programadas.</span>
+    @if (acciones()) {
+      <a
+        class="btn btn--chico btn--primario"
+        routerLink="/admin/funciones"
+        [queryParams]="{ pelicula: peliculaId() }"
+        >Programar funciones</a
+      >
+    }
+  </div>
+} @else {
+  @if (acciones()) {
+    <div class="programaciones__cabecera">
+      <span>
+        <strong>{{ total() }} funciones próximas</strong>
+        <span class="texto-suave"> · {{ tandas().length }} programaciones</span>
+      </span>
+      <div class="fila">
+        <a
+          class="btn btn--chico"
+          routerLink="/admin/funciones"
+          [queryParams]="{ pelicula: peliculaId() }"
+          >Agregar funciones</a
+        >
+        <button
+          type="button"
+          class="btn btn--chico btn--peligro"
+          [disabled]="quitando() !== null"
+          (click)="quitarTodas()"
+        >
+          Quitar todas
+        </button>
+      </div>
+    </div>
+  }
+  <ul class="tandas">
+    @for (t of tandas(); track t.id) {
+      <li class="tanda">
+        <span class="badge">{{ t.formato }}</span>
+        <div class="tanda__info">
+          <strong>
+            {{ $any(t.idioma) | idioma }} · {{ t.desde | date: 'dd/MM' }} al
+            {{ t.hasta | date: 'dd/MM' }}
+          </strong>
+          <span class="texto-suave">
+            {{ t.funciones }} funciones · {{ t.salas.join(', ') }} · {{ t.precio | precio }}
+            @if (t.vendidas) {
+              · {{ t.vendidas }} entradas vendidas
+            }
+            · programada el {{ t.creadaEn | date: 'dd/MM HH:mm' }}
+          </span>
+        </div>
+        <button
+          type="button"
+          class="btn btn--chico btn--peligro"
+          [disabled]="quitando() !== null || t.id === 'sin-tanda'"
+          (click)="quitarTanda(t)"
+        >
+          Quitar programación
+        </button>
+      </li>
+    }
+  </ul>
+}

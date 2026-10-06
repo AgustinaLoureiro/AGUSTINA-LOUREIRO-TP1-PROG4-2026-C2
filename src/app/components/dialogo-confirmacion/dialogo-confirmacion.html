@@ -1,0 +1,31 @@
+@if (confirmacion.actual(); as c) {
+  <div class="fondo" (click)="cancelar()" aria-hidden="true"></div>
+  <div
+    class="dialogo"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="dialogo-titulo"
+    aria-describedby="dialogo-mensaje"
+  >
+    <span class="dialogo__icono" [class.dialogo__icono--peligro]="c.peligro" aria-hidden="true">{{
+      c.peligro ? '!' : '?'
+    }}</span>
+    <h2 id="dialogo-titulo">{{ c.titulo }}</h2>
+    <p id="dialogo-mensaje">{{ c.mensaje }}</p>
+    <div class="dialogo__acciones">
+      <button type="button" class="btn" (click)="confirmacion.responder(false)">
+        {{ c.cancelar ?? 'Cancelar' }}
+      </button>
+      <button
+        #aceptar
+        type="button"
+        class="btn"
+        [class.btn--primario]="!c.peligro"
+        [class.btn--peligro-lleno]="c.peligro"
+        (click)="confirmacion.responder(true)"
+      >
+        {{ c.aceptar ?? 'Confirmar' }}
+      </button>
+    </div>
+  </div>
+}

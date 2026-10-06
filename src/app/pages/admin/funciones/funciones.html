@@ -1,0 +1,586 @@
+<div class="adm-cabecera">
+  <div>
+    <h1>Funciones</h1>
+    <p>Programación, películas en cartel y ocupación de las salas.</p>
+  </div>
+</div>
+
+<div class="adm-pestanias" role="tablist">
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestania() === 'programar'"
+    (click)="cambiarPestania('programar')"
+  >
+    Programar
+  </button>
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestania() === 'cartel'"
+    (click)="cambiarPestania('cartel')"
+  >
+    En cartel ({{ cartel().length }})
+  </button>
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestania() === 'agenda'"
+    (click)="cambiarPestania('agenda')"
+  >
+    Agenda por sala
+  </button>
+</div>
+
+@switch (pestania()) {
+  @case ('programar') {
+    @if (resultados(); as r) {
+      <section class="adm-panel resultado" id="resultado">
+        <div class="resultado__cabecera">
+          @if (programada(); as pr) {
+            <img class="resultado__poster" [src]="pr.poster" alt="" />
+            <div class="resultado__datos">
+              <p class="resultado__estado">Funciones programadas</p>
+              <h2>{{ pr.titulo }}</h2>
+              <p class="texto-suave">
+                {{ pr.formato }} · {{ $any(pr.idioma) | idioma }} · del
+                {{ pr.desde | date: 'dd/MM' }} al
+                {{ pr.hasta | date: 'dd/MM/yyyy' }}
+              </p>
+              <div class="resumen-res">
+                <span class="badge badge--ok">{{ contar('ok') }} programadas</span>
+                @if (contar('sin_sala')) {
+                  <span class="badge badge--error">{{ contar('sin_sala') }} sin sala libre</span>
+                }
+                @if (contar('antes_del_estreno')) {
+                  <span class="badge">{{ contar('antes_del_estreno') }} antes del estreno</span>
+                }
+                @if (contar('pasado')) {
+                  <span class="badge">{{ contar('pasado') }} en el pasado</span>
+                }
+              </div>
+            </div>
+          }
+          <div class="resultado__acciones">
+            <button type="button" class="btn btn--primario" (click)="programarOtra()">
+              Programar otra película
+            </button>
+            <button type="button" class="btn" (click)="cambiarPestania('agenda')">
+              Ver en la agenda
+            </button>
+          </div>
+        </div>
+        @if (contar('sin_sala')) {
+          <p class="campo__ayuda">
+            Sin sala libre: en esos horarios todas las salas están ocupadas.
+          </p>
+        }
+        <div class="tabla-scroll resultados">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Fecha y hora</th>
+                <th>Sala</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (x of r; track $index) {
+                <tr>
+                  <td class="mono">{{ x.horario | date: 'EEE dd/MM HH:mm' }}</td>
+                  <td>{{ x.sala_asignada ?? '—' }}</td>
+                  <td>
+                    <span
+                      class="badge"
+                      [class.badge--ok]="x.resultado === 'ok'"
+                      [class.badge--error]="x.resultado === 'sin_sala'"
+                      >{{ textoResultado(x.resultado) }}</span
+                    >
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    } @else {
+      <form class="adm-panel prog" [formGroup]="form" (ngSubmit)="programar()">
+        <section class="prog__seccion">
+          <h2 class="prog__titulo"><span>1</span> Película</h2>
+          <div class="campo">
+            <label for="pelicula">Película</label>
+            <select id="pelicula" formControlName="peliculaId">
+              <option [ngValue]="null" disabled>Elegí una película…</option>
+              @for (g of gruposPeliculas(); track g.nombre) {
+                <optgroup [label]="g.nombre">
+                  @for (p of g.peliculas; track p.id) {
+                    <option [ngValue]="p.id">
+                      {{ p.titulo }} · {{ p.duracion_min }} min
+                      @if (g.nombre === 'Próximos estrenos') {
+                        · estreno {{ p.fecha_estreno | date: 'dd/MM' }}
+                      }
+                    </option>
+                  }
+                </optgroup>
+              }
+            </select>
+            <app-errores-campo [control]="form.controls.peliculaId" />
+            @if (peliculaElegida; as p) {
+              <span class="campo__ayuda">
+                Estreno {{ p.fecha_estreno | date: 'dd/MM/yyyy' }} ·
+                {{ p.duracion_min + limpieza() }} min de sala por función (con limpieza)
+              </span>
+            }
+          </div>
+
+          <div class="prog__campos prog__campos--tres">
+            <div class="campo">
+              <span class="campo__label">Formato</span>
+              <div
+                class="segmentado segmentado--mono segmentado--lleno"
+                role="group"
+                aria-label="Formato"
+              >
+                @for (f of formatos(); track f.codigo) {
+                  <button
+                    type="button"
+                    [attr.aria-pressed]="form.controls.formato.value === f.codigo"
+                    [disabled]="!salasCon(f.codigo).length"
+                    [title]="
+                      salasCon(f.codigo).length
+                        ? ''
+                        : 'Ninguna sala activa está equipada para ' + f.codigo
+                    "
+                    (click)="elegirFormato(f.codigo)"
+                  >
+                    {{ f.codigo }}
+                  </button>
+                }
+              </div>
+              @if (form.controls.formato.value; as fmt) {
+                <span class="campo__ayuda">En {{ salasCon(fmt).join(', ') }}</span>
+              } @else {
+                <app-errores-campo
+                  [control]="form.controls.formato"
+                  [mensajes]="{ required: 'Elegí el formato.' }"
+                />
+              }
+            </div>
+            <div class="campo">
+              <span class="campo__label">Idioma</span>
+              <div class="segmentado segmentado--lleno" role="group" aria-label="Idioma">
+                @for (i of ['CAST', 'SUBT']; track i) {
+                  <button
+                    type="button"
+                    [attr.aria-pressed]="form.controls.idioma.value === i"
+                    (click)="form.controls.idioma.setValue($any(i))"
+                  >
+                    {{ $any(i) | idioma }}
+                  </button>
+                }
+              </div>
+              <app-errores-campo
+                [control]="form.controls.idioma"
+                [mensajes]="{ required: 'Elegí el idioma.' }"
+              />
+            </div>
+            <div class="campo">
+              <label for="precio">Precio de la entrada</label>
+              <div class="moneda">
+                <span aria-hidden="true">$</span>
+                <input
+                  id="precio"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  [value]="precioTexto"
+                  (input)="escribirPrecio($event)"
+                />
+              </div>
+              @if (!form.controls.formato.value) {
+                <span class="campo__ayuda">Se completa con el precio del formato elegido.</span>
+              } @else if (precioPersonalizado()) {
+                <span class="campo__ayuda">
+                  Precio especial · el de {{ form.controls.formato.value }} es
+                  {{ precioFormato | precio }}
+                  <button type="button" class="link" (click)="restablecerPrecio()">Usar ese</button>
+                </span>
+              } @else {
+                <span class="campo__ayuda">Precio base de {{ form.controls.formato.value }}</span>
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="prog__seccion">
+          <h2 class="prog__titulo"><span>2</span> Período en cartel</h2>
+          <div class="prog__campos">
+            <app-campo-fecha
+              [control]="form.controls.desde"
+              etiqueta="Desde"
+              idCampo="desde"
+              [atajos]="atajosDesde()"
+            >
+              <app-errores-campo [control]="form.controls.desde" />
+            </app-campo-fecha>
+            <app-campo-fecha
+              [control]="form.controls.hasta"
+              etiqueta="Hasta"
+              idCampo="hasta"
+              [atajos]="desdeElegido() ? atajosHasta : []"
+              [base]="desdeElegido()"
+            >
+              <app-errores-campo [control]="form.controls.hasta" />
+            </app-campo-fecha>
+          </div>
+        </section>
+
+        <section class="prog__seccion">
+          <h2 class="prog__titulo"><span>3</span> Horarios por franja</h2>
+
+          <div formArrayName="franjas" class="franjas">
+            @for (franja of franjas.controls; track $index; let i = $index) {
+              @let f = franja.controls;
+              <fieldset class="franja" [formGroupName]="i">
+                <div class="franja__cabecera">
+                  <input
+                    class="franja__nombre"
+                    formControlName="nombre"
+                    [placeholder]="'Franja ' + (i + 1)"
+                    aria-label="Nombre de la franja"
+                  />
+                  @if (franjas.length > 1) {
+                    <button type="button" class="link" (click)="quitarFranja(i)">Quitar</button>
+                  }
+                </div>
+
+                <div class="franja__fila">
+                  <span class="campo__label">Días</span>
+                  <div class="segmentado" role="group" aria-label="Días">
+                    @for (d of dias; track d[0]) {
+                      @let otra = duenioDe(d[0], i);
+                      <button
+                        type="button"
+                        [attr.aria-pressed]="f.dias.value.includes(d[0])"
+                        [title]="otra ? 'Está en ' + otra + ': tocá para moverlo acá' : ''"
+                        (click)="alternarDia(i, d[0])"
+                      >
+                        {{ d[1] }}
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="franja__fila">
+                  <span class="campo__label">Primera función</span>
+                  <div class="segmentado segmentado--mono" role="group" aria-label="Hora">
+                    @for (h of horas; track h) {
+                      <button
+                        type="button"
+                        [attr.aria-pressed]="f.hora.value === h"
+                        (click)="f.hora.setValue(h); f.excluidos.setValue([])"
+                      >
+                        {{ h }}
+                      </button>
+                    }
+                  </div>
+                  <div class="segmentado segmentado--mono" role="group" aria-label="Minutos">
+                    @for (m of minutos; track m) {
+                      <button
+                        type="button"
+                        [attr.aria-pressed]="f.minuto.value === m"
+                        (click)="f.minuto.setValue(m); f.excluidos.setValue([])"
+                      >
+                        :{{ m }}
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="franja__fila">
+                  <span class="campo__label">Funciones por día</span>
+                  <div class="fila">
+                    <div class="segmentado" role="group" aria-label="Cantidad">
+                      <button
+                        type="button"
+                        [attr.aria-pressed]="f.modo.value === 'cantidad'"
+                        (click)="f.modo.setValue('cantidad')"
+                      >
+                        Cantidad fija
+                      </button>
+                      <button
+                        type="button"
+                        [attr.aria-pressed]="f.modo.value === 'cierre'"
+                        (click)="f.modo.setValue('cierre')"
+                      >
+                        Todas las que entren
+                      </button>
+                    </div>
+                    @if (f.modo.value === 'cantidad') {
+                      <div class="contador">
+                        <button type="button" aria-label="Menos" (click)="cambiarCantidad(i, -1)">
+                          −
+                        </button>
+                        <span class="mono">{{ f.cantidad.value }}</span>
+                        <button type="button" aria-label="Más" (click)="cambiarCantidad(i, 1)">
+                          +
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                @if (faltaEnFranja(i); as falta) {
+                  <p class="franja__resumen">{{ falta }}</p>
+                } @else {
+                  <div class="generados" aria-label="Horarios calculados">
+                    @for (h of horariosDe(i); track h.inicio) {
+                      @let quitado = f.excluidos.value.includes(h.inicio);
+                      <button
+                        type="button"
+                        class="generado"
+                        [class.generado--quitado]="quitado"
+                        [title]="quitado ? 'Volver a incluir' : 'Quitar este horario'"
+                        (click)="alternarExcluido(i, h.inicio)"
+                      >
+                        <span class="mono">{{ h.inicio }}</span
+                        ><small>– {{ h.fin }}</small>
+                      </button>
+                    } @empty {
+                      <span class="campo__ayuda">Ninguna función empieza antes de las 23:59.</span>
+                    }
+                  </div>
+                  @if (f.modo.value === 'cantidad' && horariosDe(i).length < f.cantidad.value) {
+                    <span class="campo__ayuda">
+                      Pediste {{ f.cantidad.value }}, pero antes de las 23:59 solo entran
+                      {{ horariosDe(i).length }}.
+                    </span>
+                  }
+                  <p class="franja__resumen">
+                    {{ activos(i).length }} por día · <strong>{{ totalFranja(i) }}</strong> en el
+                    período
+                  </p>
+                }
+              </fieldset>
+            }
+          </div>
+          @if (franjas.length < 4) {
+            <button type="button" class="link" (click)="agregarFranja()">
+              + Agregar otra franja
+            </button>
+          }
+        </section>
+
+        <div class="prog__pie">
+          <span
+            >Se van a programar <strong class="mono">{{ cantidadEstimada }}</strong> funciones</span
+          >
+          <div class="fila">
+            <a routerLink="/admin/peliculas" class="btn">Cancelar</a>
+            <button
+              type="submit"
+              class="btn btn--primario"
+              [disabled]="programando() || !cantidadEstimada"
+            >
+              {{ programando() ? 'Asignando salas…' : 'Programar funciones' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    }
+  }
+
+  @case ('cartel') {
+    <section class="adm-panel cartel">
+      @if (cargandoCartel() && !cartel().length) {
+        <p class="texto-suave">Cargando…</p>
+      }
+      @for (p of cartel(); track p.peliculaId) {
+        <article class="en-cartel">
+          <img class="miniatura" [src]="p.poster" alt="" />
+          <div class="en-cartel__info">
+            <strong>{{ p.titulo }}</strong>
+            <span class="texto-suave">
+              {{ p.desde | date: 'dd/MM' }} al {{ p.hasta | date: 'dd/MM' }} ·
+              {{ p.funciones }} funciones · {{ p.salas.join(', ') }} · {{ p.formatos.join(' / ') }}
+            </span>
+            <span class="texto-suave">
+              {{ p.vendidas }} entradas vendidas
+              @if (p.conVentas) {
+                · {{ p.conVentas }} con ventas
+              }
+            </span>
+            <button
+              type="button"
+              class="link en-cartel__ver-tandas"
+              [attr.aria-expanded]="tandasAbiertas() === p.peliculaId"
+              (click)="alternarTandas(p)"
+            >
+              {{ tandasAbiertas() === p.peliculaId ? 'Ocultar' : 'Ver' }} programaciones ({{
+                p.tandas.size
+              }})
+            </button>
+          </div>
+          <div class="en-cartel__acciones">
+            <button type="button" class="btn btn--chico" (click)="programarOtra(p.peliculaId)">
+              Agregar funciones
+            </button>
+            <button type="button" class="btn btn--chico" (click)="verEnAgenda(p)">
+              Ver en agenda
+            </button>
+            <button
+              type="button"
+              class="btn btn--chico"
+              [disabled]="quitando() === p.peliculaId"
+              (click)="quitarDesdeJueves(p)"
+            >
+              Bajar desde el jueves
+            </button>
+            <button
+              type="button"
+              class="btn btn--chico btn--peligro"
+              [disabled]="quitando() === p.peliculaId"
+              (click)="quitarTodas(p)"
+            >
+              Quitar todas
+            </button>
+          </div>
+          @if (tandasAbiertas() === p.peliculaId) {
+            <app-programaciones-pelicula
+              class="en-cartel__tandas"
+              [peliculaId]="p.peliculaId"
+              [titulo]="p.titulo"
+              [acciones]="false"
+              (cambio)="cargarCartel(); cargarAgenda()"
+            />
+          }
+        </article>
+      } @empty {
+        @if (!cargandoCartel()) {
+          <div class="vacio">
+            <strong>No hay funciones programadas.</strong>
+            <button
+              type="button"
+              class="btn btn--chico btn--primario"
+              (click)="cambiarPestania('programar')"
+            >
+              Programar una película
+            </button>
+          </div>
+        }
+      }
+    </section>
+  }
+
+  @case ('agenda') {
+    <section class="adm-panel agenda" id="agenda">
+      <app-tira-dias [dias]="tira" [seleccionado]="diaAgenda()" (elegir)="elegirDia($event)" />
+      <p class="campo__ayuda">{{ funcionesDia().length }} funciones · rayado: limpieza</p>
+
+      <div class="linea-tiempo" [class.linea-tiempo--cargando]="cargandoAgenda()">
+        <div class="linea-tiempo__escala">
+          <span></span>
+          <div class="escala">
+            @for (h of marcas; track $index) {
+              <span [style.left.%]="($index / (marcas.length - 1)) * 100">{{
+                h < 10 ? '0' + h : h
+              }}</span>
+            }
+          </div>
+        </div>
+        @for (fila of filasAgenda(); track fila.sala.id) {
+          <div class="linea-tiempo__fila">
+            <span class="sala" [class.sala--inactiva]="!fila.sala.activa">{{
+              fila.sala.nombre
+            }}</span>
+            <div class="pista">
+              @for (f of fila.funciones; track f.id) {
+                @let pos = posicion(f);
+                <button
+                  type="button"
+                  class="bloque"
+                  [class.bloque--inactiva]="!f.activa"
+                  [class.bloque--elegido]="seleccionada()?.id === f.id"
+                  [style.left.%]="pos.izquierda"
+                  [style.width.%]="pos.ancho + pos.limpieza"
+                  [style.--limpieza]="(pos.limpieza / (pos.ancho + pos.limpieza)) * 100 + '%'"
+                  [title]="f.peliculas?.titulo + ' · ' + (f.inicio | date: 'HH:mm')"
+                  (click)="seleccionar(f)"
+                >
+                  <strong>{{ f.inicio | date: 'HH:mm' }}</strong>
+                  <span>{{ f.peliculas?.titulo }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="agenda-lista">
+        @for (fila of filasAgenda(); track fila.sala.id) {
+          @if (fila.funciones.length) {
+            <div>
+              <p class="agenda-lista__sala">{{ fila.sala.nombre }}</p>
+              @for (f of fila.funciones; track f.id) {
+                <button type="button" class="agenda-lista__item" (click)="seleccionar(f)">
+                  <strong class="mono">{{ f.inicio | date: 'HH:mm' }}</strong>
+                  <span>{{ f.peliculas?.titulo }}</span>
+                  <small>{{ f.vendidas }} vend.</small>
+                </button>
+              }
+            </div>
+          }
+        } @empty {
+          <p class="texto-suave">No hay salas cargadas.</p>
+        }
+        @if (!funcionesDia().length) {
+          <p class="texto-suave">No hay funciones este día.</p>
+        }
+      </div>
+
+      @if (seleccionada(); as f) {
+        <div class="detalle">
+          <div>
+            <p class="detalle__titulo">{{ f.peliculas?.titulo }}</p>
+            <p class="texto-suave">
+              {{ f.inicio | date: 'EEEE d/MM, HH:mm' }} a {{ f.fin | date: 'HH:mm' }} ·
+              {{ f.salas?.nombre }} · {{ f.formato }} {{ f.idioma | idioma }}
+            </p>
+            <p>
+              <strong class="mono">{{ f.vendidas }}</strong> butacas vendidas ·
+              {{ f.activa ? 'Activa' : 'Cancelada' }}
+            </p>
+          </div>
+          <div class="detalle__acciones">
+            <div class="fila">
+              <input
+                class="input precio"
+                type="number"
+                appSoloNumeros
+                min="1"
+                [formControl]="precioEditado"
+                aria-label="Precio de esta función"
+              />
+              <button type="button" class="btn btn--chico" (click)="guardarPrecio()">
+                Guardar precio
+              </button>
+            </div>
+            <div class="fila">
+              @if (f.vendidas === 0) {
+                <button type="button" class="btn btn--chico" (click)="eliminar(f)">
+                  Quitar esta función
+                </button>
+              }
+              <button
+                type="button"
+                class="btn btn--chico btn--peligro"
+                (click)="quitarDesdeEsteDia(f)"
+              >
+                Quitar la película desde este día
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+  }
+}

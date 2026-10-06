@@ -1,17 +1,24 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { Supabase } from '../services/supabase';
+import { Auth } from '../services/auth';
 
-export const authGuard: CanActivateFn = async () => {
-  const supabase = inject(Supabase);
+/** Solo usuarios logueados. Si no hay sesión, manda a ingresar y luego vuelve. */
+export const authGuard: CanActivateFn = async (route, state) => {
+  const auth = inject(Auth);
   const router = inject(Router);
+  await auth.listo();
 
-  const { data } = await supabase.Supabase.auth.getSession();
-
-  if (data.session) {
+  if (auth.logueado()) {
     return true;
   }
+  return router.createUrlTree(['/ingresar'], { queryParams: { volver: state.url } });
+};
 
-  router.navigate(['/register']);
-  return false;
+/** Solo visitantes sin sesión (login y registro). */
+export const invitadoGuard: CanActivateFn = async () => {
+  const auth = inject(Auth);
+  const router = inject(Router);
+  await auth.listo();
+
+  return auth.logueado() ? router.parseUrl(auth.rutaInicio()) : true;
 };

@@ -1,0 +1,129 @@
+<div class="contenedor pagina">
+  @if (cargando()) {
+    <div class="esqueleto" style="height: 560px; max-width: 420px; margin-inline: auto"></div>
+  } @else if (compra(); as c) {
+    <div class="celebracion">
+      @if (c.estado === 'cancelada') {
+        <p class="antetitulo">Compra cancelada</p>
+        <h1>Esta entrada ya no es válida</h1>
+      } @else {
+        <p class="antetitulo">¡Listo!</p>
+        <h1>Tu plan perfecto está confirmado</h1>
+        <p class="texto-suave">
+          Descargá el PDF o mostrá este QR en el ingreso. Compra registrada a nombre de
+          {{ c.email }}.
+        </p>
+      }
+    </div>
+
+    <article class="entrada" [class.entrada--cancelada]="c.estado === 'cancelada'">
+      <header class="entrada__cabecera">
+        <img [src]="c.pelicula.poster_url" alt="" appImagenRespaldo />
+        <div>
+          <span class="badge" [class.badge--rojo]="c.pelicula.clasificacion !== 'ATP'">{{
+            c.pelicula.clasificacion
+          }}</span>
+          <h2>{{ c.pelicula.titulo }}</h2>
+          <p>
+            {{ c.pelicula.duracion_min | duracion }} · {{ c.funcion.formato }} ·
+            {{ c.funcion.idioma | idioma }}
+          </p>
+        </div>
+      </header>
+
+      <dl class="datos">
+        <div>
+          <dt>Fecha</dt>
+          <dd>{{ c.funcion.inicio | date: "EEE d 'de' MMM" }}</dd>
+        </div>
+        <div>
+          <dt>Hora</dt>
+          <dd>{{ c.funcion.inicio | date: 'HH:mm' }}</dd>
+        </div>
+        <div>
+          <dt>Sala</dt>
+          <dd>{{ c.funcion.sala }}</dd>
+        </div>
+      </dl>
+
+      <div class="butacas">
+        @for (e of c.entradas; track e.butaca) {
+          <span
+            class="butaca"
+            [class.butaca--vip]="e.tipo === 'vip'"
+            [class.butaca--accesible]="e.tipo === 'accesible'"
+          >
+            {{ e.butaca }}
+            @if (e.tipo === 'vip') {
+              <small>VIP</small>
+            }
+            @if (e.tipo === 'accesible') {
+              <small>♿</small>
+            }
+          </span>
+        }
+      </div>
+
+      <div class="troquel" aria-hidden="true"></div>
+
+      <div class="qr">
+        <app-codigo-qr [texto]="c.codigo" />
+        <p class="codigo mono">{{ c.codigo | codigo }}</p>
+        <p class="texto-suave chico">
+          Un solo QR para la sala y el candy bar. Cada uno se invalida al usarse.
+        </p>
+      </div>
+
+      @if (c.items.length) {
+        <div class="troquel" aria-hidden="true"></div>
+        <div class="candy">
+          <p class="candy__titulo">Candy bar</p>
+          <ul>
+            @for (i of c.items; track $index) {
+              <li>{{ i.cantidad }} × {{ i.nombre }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (c.pelicula.clasificacion !== 'ATP') {
+        <p class="aviso aviso--error chico">
+          {{
+            c.pelicula.clasificacion === '+18'
+              ? 'Película +18: ingreso exclusivo para adultos. Se solicitará DNI.'
+              : 'Película +13: menores de 13 no pueden ingresar. Debe asistir un adulto responsable.'
+          }}
+        </p>
+      }
+
+      <footer class="entrada__pie">
+        <span>Total pagado</span>
+        <strong>{{ c.total | precio }}</strong>
+      </footer>
+    </article>
+
+    <div class="acciones">
+      <button
+        type="button"
+        class="btn btn--primario"
+        [disabled]="descargando() || c.estado === 'cancelada'"
+        (click)="descargar()"
+      >
+        {{ descargando() ? 'Generando…' : 'Descargar PDF' }}
+      </button>
+      @if (auth.logueado()) {
+        <a routerLink="/perfil" class="btn btn--fantasma">Ver mis entradas</a>
+      } @else {
+        <a routerLink="/registro" class="btn btn--fantasma">Creá tu cuenta y sumá puntos</a>
+      }
+    </div>
+    @if (c.puntos_ganados > 0) {
+      <p class="puntos">★ Sumaste {{ c.puntos_ganados }} puntos</p>
+    }
+  } @else {
+    <div class="vacio">
+      <strong>No encontramos una compra con ese código.</strong>
+      <a routerLink="/" class="btn btn--primario">Ir al inicio</a>
+    </div>
+  }
+</div>

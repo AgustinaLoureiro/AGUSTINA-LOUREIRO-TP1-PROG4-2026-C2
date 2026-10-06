@@ -1,29 +1,22 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { Supabase } from '../services/supabase';
+import { Auth } from '../services/auth';
+import { Rol } from '../interfaces/usuario';
 
-export function roleGuard(rolesPermitidos: string[]): CanActivateFn {
-  return async () => {
-    const supabase = inject(Supabase);
+/**
+ * Restringe una ruta a ciertos roles. La seguridad real está en la base (RLS y
+ * validaciones dentro de las RPC); el guard evita mostrar pantallas sin permiso.
+ */
+export function roleGuard(rolesPermitidos: Rol[]): CanActivateFn {
+  return async (route, state) => {
+    const auth = inject(Auth);
     const router = inject(Router);
+    await auth.listo();
 
-    const { data: sessionData } = await supabase.Supabase.auth.getSession();
-    if (!sessionData.session) {
-      router.navigate(['/register']);
-      return false;
+    if (!auth.logueado()) {
+      return router.createUrlTree(['/ingresar'], { queryParams: { volver: state.url } });
     }
-
-    const { data: perfil, error } = await supabase.Supabase
-      .from('profiles')
-      .select('rol')
-      .eq('id', sessionData.session.user.id)
-      .single();
-
-    if (error || !perfil || !rolesPermitidos.includes(perfil.rol)) {
-      router.navigate(['/']);
-      return false;
-    }
-
-    return true;
+    const rol = auth.rol();
+    return rol && rolesPermitidos.includes(rol) ? true : router.parseUrl('/');
   };
 }

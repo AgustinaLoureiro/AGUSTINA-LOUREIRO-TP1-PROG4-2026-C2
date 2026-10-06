@@ -1,0 +1,198 @@
+<div class="adm-cabecera">
+  <div>
+    <h1>Usuarios</h1>
+    <p>Personal del cine y clientes registrados.</p>
+  </div>
+  @if (grupo() === 'personal') {
+    <button type="button" class="btn btn--primario" (click)="abrirAlta()">
+      + Agregar empleado
+    </button>
+  }
+</div>
+
+<div class="fila fila--entre barra-usuarios">
+  <div class="adm-pestanias" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="grupo() === 'personal'"
+      (click)="cambiarGrupo('personal')"
+    >
+      Personal
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="grupo() === 'clientes'"
+      (click)="cambiarGrupo('clientes')"
+    >
+      Clientes
+    </button>
+  </div>
+  <input
+    class="input buscador"
+    type="search"
+    placeholder="Buscar por nombre o email…"
+    [formControl]="busqueda"
+    aria-label="Buscar usuarios"
+  />
+</div>
+
+<div class="tabla-scroll">
+  <table class="tabla tabla-usuarios">
+    @if (grupo() === 'personal') {
+      <colgroup>
+        <col style="width: 22%" />
+        <col style="width: 26%" />
+        <col style="width: 13%" />
+        <col style="width: 9%" />
+        <col style="width: 30%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Alta</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of usuarios(); track u.id) {
+          <tr>
+            <td>
+              @if ((u.nombre + u.apellido).trim()) {
+                <strong>{{ u.nombre }} {{ u.apellido }}</strong>
+              } @else {
+                <span class="sin-dato">Sin completar</span>
+              }
+            </td>
+            <td class="mono">{{ u.email }}</td>
+            <td>
+              <span class="badge" [class.badge--oro]="u.rol === 'admin'">{{
+                u.rol === 'admin' ? 'Administrador' : 'Empleado'
+              }}</span>
+            </td>
+            <td class="mono">{{ u.creado_en | date: 'dd/MM/yy' }}</td>
+            <td>
+              @if (u.id === auth.usuario()?.id) {
+                <span class="texto-suave">Tu cuenta</span>
+              } @else {
+                <div class="acciones-tabla">
+                  <button type="button" class="btn btn--chico" (click)="alternarAdmin(u)">
+                    {{ u.rol === 'admin' ? 'Pasar a empleado' : 'Hacer administrador' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn--chico btn--peligro"
+                    (click)="quitarAcceso(u)"
+                  >
+                    Quitar acceso
+                  </button>
+                </div>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="texto-suave">
+              {{ cargando() ? 'Cargando…' : 'Sin resultados.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    } @else {
+      <colgroup>
+        <col style="width: 24%" />
+        <col style="width: 30%" />
+        <col style="width: 13%" />
+        <col style="width: 9%" />
+        <col style="width: 12%" />
+        <col />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Nacimiento</th>
+          <th class="num">Puntos</th>
+          <th class="num">Crédito</th>
+          <th>Alta</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of usuarios(); track u.id) {
+          <tr>
+            <td>
+              @if ((u.nombre + u.apellido).trim()) {
+                <strong>{{ u.nombre }} {{ u.apellido }}</strong>
+              } @else {
+                <span class="sin-dato">Sin completar</span>
+              }
+            </td>
+            <td class="mono">{{ u.email }}</td>
+            <td class="mono">
+              @if (u.fecha_nacimiento) {
+                {{ u.fecha_nacimiento | date: 'dd/MM/yyyy' }}
+              } @else {
+                <span class="sin-dato">Sin completar</span>
+              }
+            </td>
+            <td class="num">{{ u.puntos }}</td>
+            <td class="num">{{ u.credito | precio }}</td>
+            <td class="mono">{{ u.creado_en | date: 'dd/MM/yy' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="texto-suave">
+              {{ cargando() ? 'Cargando…' : 'Sin resultados.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    }
+  </table>
+</div>
+
+@if (modalAlta()) {
+  <div class="modal-admin" role="dialog" aria-label="Agregar empleado">
+    <form class="modal-admin__caja" [formGroup]="alta" (ngSubmit)="guardarAlta()">
+      <h2>Agregar empleado</h2>
+      <p class="campo__ayuda" style="margin: -0.5rem 0 1rem">
+        Accede al control de entradas y candy bar. Si el email ya tiene cuenta, solo se le da el
+        acceso.
+      </p>
+      <div class="grilla-form">
+        <div class="campo">
+          <label for="a-nombre">Nombre</label>
+          <input id="a-nombre" formControlName="nombre" />
+          <app-errores-campo [control]="alta.controls.nombre" />
+        </div>
+        <div class="campo">
+          <label for="a-apellido">Apellido</label>
+          <input id="a-apellido" formControlName="apellido" />
+          <app-errores-campo [control]="alta.controls.apellido" />
+        </div>
+      </div>
+      <div class="campo">
+        <label for="a-email">Email</label>
+        <input id="a-email" type="email" formControlName="email" autocomplete="off" />
+        <app-errores-campo [control]="alta.controls.email" />
+      </div>
+      <div class="campo">
+        <label for="a-pass">Contraseña inicial</label>
+        <input id="a-pass" type="text" formControlName="password" autocomplete="new-password" />
+        <span class="campo__ayuda"
+          >Mínimo 8 caracteres, con letras y números. Pasásela al empleado.</span
+        >
+        <app-errores-campo [control]="alta.controls.password" />
+      </div>
+      <div class="fila" style="justify-content: flex-end; margin-top: 0.5rem">
+        <button type="button" class="btn" (click)="modalAlta.set(false)">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Agregar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}

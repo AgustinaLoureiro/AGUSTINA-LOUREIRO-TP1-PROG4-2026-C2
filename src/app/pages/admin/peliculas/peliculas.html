@@ -1,0 +1,132 @@
+<div class="adm-cabecera">
+  <div>
+    <h1>Películas</h1>
+    <p>Cartelera, próximos estrenos y preventas.</p>
+  </div>
+  <a routerLink="nueva" class="btn btn--primario">+ Nueva película</a>
+</div>
+
+<div class="fila fila--entre" style="margin-bottom: 1rem">
+  <div class="chips">
+    @for (f of filtros; track f[0]) {
+      <button
+        type="button"
+        class="chip"
+        [attr.aria-pressed]="filtro() === f[0]"
+        (click)="filtro.set(f[0])"
+      >
+        {{ f[1] }}
+      </button>
+    }
+  </div>
+  <div class="herramientas">
+    <label class="orden">
+      <span class="campo__label">Ordenar</span>
+      <select class="input" [value]="orden()" (change)="orden.set($any($event.target).value)">
+        @for (o of ordenes; track o[0]) {
+          <option [value]="o[0]">{{ o[1] }}</option>
+        }
+      </select>
+    </label>
+    <input
+      class="input buscar"
+      type="search"
+      placeholder="Buscar título…"
+      [value]="texto()"
+      (input)="texto.set($any($event.target).value)"
+      aria-label="Buscar película"
+    />
+  </div>
+</div>
+
+<div class="tabla-scroll">
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Título</th>
+        <th>Estreno</th>
+        <th>Clasif.</th>
+        <th>Duración</th>
+        <th>Preventa</th>
+        <th>Visible</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (cargando()) {
+        <tr>
+          <td colspan="8">Cargando…</td>
+        </tr>
+      }
+      @for (p of lista(); track p.id) {
+        <tr [class.fila--abierta]="abierta() === p.id">
+          <td><img class="miniatura" [src]="p.poster_url" alt="" appImagenRespaldo /></td>
+          <td>
+            <strong>{{ p.titulo }}</strong>
+          </td>
+          <td class="mono">{{ p.fecha_estreno | date: 'dd/MM/yyyy' }}</td>
+          <td>
+            <span class="badge" [class.badge--error]="p.clasificacion !== 'ATP'">{{
+              p.clasificacion
+            }}</span>
+          </td>
+          <td class="sin-corte">{{ p.duracion_min | duracion }}</td>
+          <td>
+            @if (p.preventa_habilitada) {
+              <span class="badge badge--oro"
+                >{{ p.preventa_dias }} días · −{{ p.preventa_descuento }}%</span
+              >
+            } @else {
+              <span class="texto-suave">—</span>
+            }
+          </td>
+          <td>
+            <label class="interruptor" [title]="p.visible ? 'Visible en el sitio' : 'Oculta'">
+              <input
+                type="checkbox"
+                [checked]="p.visible"
+                (change)="alternarVisible(p)"
+                [attr.aria-label]="'Visible: ' + p.titulo"
+              />
+              <span></span>
+            </label>
+          </td>
+          <td>
+            <div class="acciones-tabla">
+              <button
+                type="button"
+                class="btn btn--chico btn-funciones"
+                [attr.aria-expanded]="abierta() === p.id"
+                (click)="alternarFunciones(p)"
+              >
+                Funciones ({{ cantidadFunciones(p) }})
+              </button>
+              <a [routerLink]="[p.id]" class="btn btn--chico">Editar</a>
+              <button type="button" class="btn btn--peligro btn--chico" (click)="eliminar(p)">
+                Eliminar
+              </button>
+            </div>
+          </td>
+        </tr>
+        @if (abierta() === p.id) {
+          <tr class="fila-funciones">
+            <td colspan="8">
+              <app-programaciones-pelicula
+                [peliculaId]="p.id"
+                [titulo]="p.titulo"
+                (cambio)="cargar()"
+              />
+            </td>
+          </tr>
+        }
+      } @empty {
+        @if (!cargando()) {
+          <tr>
+            <td colspan="8" class="texto-suave">No hay películas con ese filtro.</td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

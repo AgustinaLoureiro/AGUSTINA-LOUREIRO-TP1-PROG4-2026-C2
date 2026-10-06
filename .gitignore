@@ -42,3 +42,13 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Claves y configuración local (se generan desde la plantilla o desde variables de entorno)
+/src/environments/environment.ts
+/src/environments/environment.development.ts
+.env
+.env.*
+!.env.example
+
+# Material personal de carga manual (no forma parte del proyecto)
+/carga-manual/

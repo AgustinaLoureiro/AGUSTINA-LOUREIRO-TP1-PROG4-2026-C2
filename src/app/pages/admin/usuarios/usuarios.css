@@ -1,0 +1,27 @@
+/* Filas parejas aunque una no tenga botones */
+.tabla-usuarios {
+  table-layout: fixed;
+  min-width: 1080px;
+}
+
+.tabla-usuarios td {
+  height: 58px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Botones en un solo renglón y del mismo ancho: solo cambia el texto */
+.tabla-usuarios .acciones-tabla {
+  flex-wrap: nowrap;
+}
+
+.tabla-usuarios .acciones-tabla .btn {
+  width: 150px;
+  flex: 0 0 150px;
+}
+
+.sin-dato {
+  color: var(--muted);
+  font-style: italic;
+}

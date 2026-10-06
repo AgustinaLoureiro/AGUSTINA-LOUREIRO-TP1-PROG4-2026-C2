@@ -1,0 +1,26 @@
+.fecha {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.fecha__parte {
+  width: 3.4rem !important;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+}
+
+.fecha__parte--anio {
+  width: 5rem !important;
+}
+
+.fecha__sep {
+  color: var(--muted);
+  font-size: 1.2rem;
+}
+
+.chips {
+  margin-top: 0.35rem;
+}

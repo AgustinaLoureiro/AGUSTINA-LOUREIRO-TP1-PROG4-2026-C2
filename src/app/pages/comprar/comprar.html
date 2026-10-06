@@ -1,0 +1,488 @@
+@if (cargando()) {
+  <div class="contenedor" style="padding-top: 2rem">
+    <div class="esqueleto" style="height: 520px"></div>
+  </div>
+} @else if (errorCarga()) {
+  <div class="contenedor" style="padding-top: 3rem">
+    <div class="vacio">
+      <strong>{{ errorCarga() }}</strong>
+      <a routerLink="/cartelera" class="btn btn--primario">Volver a la cartelera</a>
+    </div>
+  </div>
+} @else if (funcion(); as f) {
+  <header class="encabezado">
+    <div class="contenedor encabezado__interior">
+      <img class="encabezado__poster" [src]="f.peliculas?.poster_url" alt="" appImagenRespaldo />
+      <div class="encabezado__texto">
+        <a [routerLink]="['/pelicula', f.pelicula_id]" class="volver"
+          >← {{ f.peliculas?.titulo }}</a
+        >
+        <p class="encabezado__funcion">
+          {{ f.inicio | date: "EEEE d 'de' MMMM · HH:mm" }} hs
+          <span class="badge">{{ f.formato }}</span>
+          <span class="badge">{{ f.idioma | idioma }}</span>
+          <span class="badge">{{ f.salas?.nombre }}</span>
+        </p>
+      </div>
+    </div>
+    <nav class="contenedor pasos" aria-label="Pasos de la compra">
+      @for (p of [1, 2, 3]; track p) {
+        <button
+          type="button"
+          class="paso"
+          [class.paso--activo]="paso() === p"
+          [class.paso--hecho]="paso() > p"
+          [disabled]="p > 1 && !butacas().length"
+          (click)="irA($any(p))"
+          [attr.aria-current]="paso() === p ? 'step' : null"
+        >
+          <span class="paso__num">{{ p }}</span>
+          {{ p === 1 ? 'Butacas' : p === 2 ? 'Candy' : 'Pago' }}
+        </button>
+      }
+    </nav>
+  </header>
+
+  <div class="contenedor cuerpo">
+    <section class="principal">
+      @switch (paso()) {
+        @case (1) {
+          <div class="fila fila--entre">
+            <h1 class="titulo-paso">Elegí tus butacas</h1>
+            <span class="en-vivo" [class.en-vivo--on]="sala()?.conectado()">
+              <span class="en-vivo__punto"></span
+              >{{ sala()?.conectado() ? 'En vivo' : 'Conectando…' }}
+            </span>
+          </div>
+          <app-mapa-butacas
+            [ocupadas]="sala()?.ocupadas() ?? sinButacas"
+            [eligiendoOtros]="sala()?.eligiendoOtros() ?? sinButacas"
+            [inhabilitadas]="f.salas?.butacas_inhabilitadas ?? []"
+            [seleccionadas]="butacas()"
+            (alternar)="alternarButaca($event)"
+          />
+          @if (hayVip()) {
+            <div class="aviso aviso--oro vip-aviso" role="status">
+              <strong>Elegiste butacas VIP.</strong>
+              <span
+                >Las filas R, S y T tienen un recargo de {{ config()?.recargo_vip | precio }} por
+                butaca.</span
+              >
+            </div>
+          }
+        }
+
+        @case (2) {
+          <h1 class="titulo-paso">Sumá candy a tu compra</h1>
+          <p class="texto-suave">Todo se retira en el candy bar con el mismo QR de la entrada.</p>
+
+          @if (combos().length) {
+            <h2 class="subtitulo">
+              Combos destacados <span class="badge badge--oro">Incluyen entrada</span>
+            </h2>
+            <div class="combos">
+              @for (c of combos(); track c.id) {
+                @let cant = cantCombos()[c.id] ?? 0;
+                <article class="combo" [class.combo--elegido]="cant > 0">
+                  <div>
+                    <p class="combo__nombre">{{ c.nombre }}</p>
+                    <p class="combo__detalle">1 entrada + {{ nombresCombo(c) }}</p>
+                  </div>
+                  <div class="fila fila--entre">
+                    <span class="combo__precio">{{ c.precio | precio }}</span>
+                    <div class="contador">
+                      <button
+                        type="button"
+                        aria-label="Quitar"
+                        [disabled]="!cant"
+                        (click)="cambiar('combo', c.id, -1)"
+                      >
+                        −
+                      </button>
+                      <span aria-live="polite">{{ cant }}</span>
+                      <button
+                        type="button"
+                        aria-label="Agregar"
+                        (click)="cambiar('combo', c.id, 1)"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+
+          @if (auth.logueado() && recompensas().length) {
+            <h2 class="subtitulo">
+              Canjeá tus puntos <span class="badge">{{ auth.perfil()?.puntos }} disponibles</span>
+            </h2>
+            <div class="items">
+              @for (r of recompensas(); track r.id) {
+                @let cant = cantRecompensas()[r.id] ?? 0;
+                <div class="item">
+                  <div>
+                    <p class="item__nombre">{{ r.nombre }}</p>
+                    <p class="item__precio">{{ r.puntos }} puntos</p>
+                  </div>
+                  <div class="contador">
+                    <button
+                      type="button"
+                      aria-label="Quitar"
+                      [disabled]="!cant"
+                      (click)="cambiar('recompensa', r.id, -1)"
+                    >
+                      −
+                    </button>
+                    <span>{{ cant }}</span>
+                    <button
+                      type="button"
+                      aria-label="Agregar"
+                      (click)="cambiar('recompensa', r.id, 1)"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <h2 class="subtitulo">Productos</h2>
+          <div class="chips">
+            <button
+              type="button"
+              class="chip"
+              [attr.aria-pressed]="categoriaActiva() === null"
+              (click)="categoriaActiva.set(null)"
+            >
+              Todo
+            </button>
+            @for (c of categorias(); track c.id) {
+              <button
+                type="button"
+                class="chip"
+                [attr.aria-pressed]="categoriaActiva() === c.id"
+                (click)="categoriaActiva.set(c.id)"
+              >
+                {{ c.nombre }}
+              </button>
+            }
+          </div>
+          <div class="items">
+            @for (p of productosVisibles(); track p.id) {
+              @let cant = cantProductos()[p.id] ?? 0;
+              <div class="item" [class.item--elegido]="cant > 0">
+                @if (p.imagen_url) {
+                  <img class="item__img" [src]="p.imagen_url" alt="" appImagenRespaldo />
+                }
+                <div>
+                  <p class="item__nombre">{{ p.nombre }}</p>
+                  <p class="item__desc">{{ p.descripcion }}</p>
+                  <p class="item__precio">{{ p.precio | precio }}</p>
+                </div>
+                <div class="contador">
+                  <button
+                    type="button"
+                    aria-label="Quitar"
+                    [disabled]="!cant"
+                    (click)="cambiar('producto', p.id, -1)"
+                  >
+                    −
+                  </button>
+                  <span>{{ cant }}</span>
+                  <button type="button" aria-label="Agregar" (click)="cambiar('producto', p.id, 1)">
+                    +
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @case (3) {
+          <h1 class="titulo-paso">Datos y pago</h1>
+          <form [formGroup]="formPago" class="pila" (ngSubmit)="confirmar()">
+            @if (!auth.logueado()) {
+              <fieldset class="tarjeta">
+                <legend>¿A dónde te mandamos la entrada?</legend>
+                <p class="texto-suave">
+                  Podés comprar sin cuenta.
+                  <a routerLink="/ingresar" [queryParams]="{ volver: '/comprar/' + f.id }"
+                    >Ingresá</a
+                  >
+                  para sumar puntos y tener tu {{ config()?.descuento_primera_compra }}% de
+                  descuento en la primera compra.
+                </p>
+                <div class="grilla-form">
+                  <div class="campo">
+                    <label for="nombre">Nombre y apellido</label>
+                    <input id="nombre" formControlName="nombre" autocomplete="name" />
+                    <app-errores-campo [control]="formPago.controls.nombre" />
+                  </div>
+                  <div class="campo">
+                    <label for="email">Email</label>
+                    <input id="email" type="email" formControlName="email" autocomplete="email" />
+                    <app-errores-campo [control]="formPago.controls.email" />
+                  </div>
+                </div>
+              </fieldset>
+            }
+
+            @if (edadMinima() > 0) {
+              <div class="aviso aviso--error">
+                <div class="pila" style="gap: 0.5rem">
+                  <strong>Película {{ f.peliculas?.clasificacion }}</strong>
+                  @if (auth.perfil()?.fecha_nacimiento) {
+                    <span
+                      >Verificamos tu edad con tu fecha de nacimiento.
+                      {{
+                        edadMinima() === 18
+                          ? 'Se pedirá DNI en el ingreso.'
+                          : 'Menores de 13 no pueden ingresar; debe asistir un adulto.'
+                      }}</span
+                    >
+                  } @else {
+                    <label class="check">
+                      <input type="checkbox" formControlName="declaraEdad" />
+                      Declaro que todas las personas que asistan tienen {{ edadMinima() }} años o
+                      más.
+                    </label>
+                  }
+                </div>
+              </div>
+            }
+
+            <fieldset class="tarjeta">
+              <legend>Cupón de descuento</legend>
+              @if (cupon()) {
+                <div class="fila fila--entre">
+                  <span
+                    ><span class="badge badge--ok">{{ cupon() }}</span> aplicado</span
+                  >
+                  <button
+                    type="button"
+                    class="btn btn--fantasma btn--chico"
+                    (click)="quitarCupon()"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              } @else {
+                <div class="fila cupon">
+                  <input
+                    class="input"
+                    placeholder="Ej: MAYORES50"
+                    [formControl]="cuponIngresado"
+                    aria-label="Código de cupón"
+                    (keydown.enter)="$event.preventDefault(); aplicarCupon()"
+                  />
+                  <button type="button" class="btn btn--chico" (click)="aplicarCupon()">
+                    Aplicar
+                  </button>
+                </div>
+              }
+              @if (cotizacion()?.descuento_origen === 'Primera compra') {
+                <p class="campo__ayuda">
+                  Ya tenés aplicado el beneficio de primera compra. Si tu cupón es mayor, se usa
+                  ese.
+                </p>
+              }
+            </fieldset>
+
+            @if (auth.logueado() && (cotizacion()?.credito_disponible ?? 0) > 0) {
+              <label class="check tarjeta">
+                <input
+                  type="checkbox"
+                  [checked]="usarCredito()"
+                  (change)="usarCredito.set($any($event.target).checked)"
+                />
+                <span
+                  >Usar mi crédito disponible ({{
+                    cotizacion()?.credito_disponible | precio
+                  }})</span
+                >
+              </label>
+            }
+
+            @if ((cotizacion()?.a_pagar ?? 1) > 0) {
+              <fieldset class="tarjeta" formGroupName="tarjeta">
+                <legend>Tarjeta <span class="badge">Pago simulado</span></legend>
+                <div class="campo">
+                  <label for="numero">Número de tarjeta {{ marca ? '· ' + marca : '' }}</label>
+                  <input
+                    id="numero"
+                    inputmode="numeric"
+                    autocomplete="cc-number"
+                    placeholder="4242 4242 4242 4242"
+                    [value]="formPago.controls.tarjeta.controls.numero.value"
+                    (input)="formatearTarjeta($event)"
+                    (blur)="formPago.controls.tarjeta.controls.numero.markAsTouched()"
+                  />
+                  <app-errores-campo [control]="formPago.controls.tarjeta.controls.numero" />
+                </div>
+                <div class="campo">
+                  <label for="titular">Nombre como figura en la tarjeta</label>
+                  <input id="titular" formControlName="titular" autocomplete="cc-name" />
+                  <app-errores-campo [control]="formPago.controls.tarjeta.controls.titular" />
+                </div>
+                <div class="grilla-form">
+                  <div class="campo">
+                    <label for="vencimiento">Vencimiento</label>
+                    <input
+                      id="vencimiento"
+                      inputmode="numeric"
+                      placeholder="MM/AA"
+                      autocomplete="cc-exp"
+                      [value]="formPago.controls.tarjeta.controls.vencimiento.value"
+                      (input)="formatearVencimiento($event)"
+                      (blur)="formPago.controls.tarjeta.controls.vencimiento.markAsTouched()"
+                    />
+                    <app-errores-campo [control]="formPago.controls.tarjeta.controls.vencimiento" />
+                  </div>
+                  <div class="campo">
+                    <label for="cvv">Código de seguridad</label>
+                    <input
+                      id="cvv"
+                      inputmode="numeric"
+                      maxlength="4"
+                      autocomplete="cc-csc"
+                      formControlName="cvv"
+                    />
+                    <app-errores-campo
+                      [control]="formPago.controls.tarjeta.controls.cvv"
+                      [mensajes]="{ pattern: '3 o 4 dígitos.' }"
+                    />
+                  </div>
+                </div>
+                <p class="campo__ayuda">
+                  No se realiza ningún cobro real. Solo se guardan los últimos 4 dígitos.
+                </p>
+              </fieldset>
+            }
+          </form>
+        }
+      }
+    </section>
+
+    <aside class="resumen">
+      <div class="resumen__ticket ticket">
+        <p class="resumen__titulo">Tu compra</p>
+
+        @if (!butacas().length) {
+          <p class="texto-suave">Elegí al menos una butaca en el plano.</p>
+        } @else {
+          @if (cotizacion(); as c) {
+            <ul class="lineas">
+              @for (e of c.entradas; track e.butaca) {
+                <li>
+                  <span>
+                    Butaca {{ e.butaca }}
+                    @if (e.tipo === 'vip') {
+                      <span class="badge badge--oro">VIP</span>
+                    }
+                    @if (e.tipo === 'accesible') {
+                      <span class="badge badge--azul">Accesible</span>
+                    }
+                    @if (e.por_combo) {
+                      <small>en combo</small>
+                    }
+                    @if (e.por_puntos) {
+                      <small>canje</small>
+                    }
+                    @if (e.es_preventa) {
+                      <small>preventa</small>
+                    }
+                  </span>
+                  <span class="mono">{{ e.precio | precio: true }}</span>
+                </li>
+              }
+              @for (i of c.items; track $index) {
+                <li>
+                  <span>{{ i.cantidad }} × {{ i.nombre }}</span>
+                  <span class="mono">{{ i.precio_unitario * i.cantidad | precio: true }}</span>
+                </li>
+              }
+            </ul>
+            <hr class="separador-ticket" />
+            <ul class="lineas">
+              @if (c.descuento > 0) {
+                <li class="descuento">
+                  <span>{{ c.descuento_origen }} (−{{ c.descuento_porcentaje }}%)</span
+                  ><span class="mono">−{{ c.descuento | precio }}</span>
+                </li>
+              }
+              @if (c.credito_usado > 0) {
+                <li class="descuento">
+                  <span>Crédito</span><span class="mono">−{{ c.credito_usado | precio }}</span>
+                </li>
+              }
+              @if (c.puntos_usados > 0) {
+                <li>
+                  <span>Puntos canjeados</span><span class="mono">{{ c.puntos_usados }}</span>
+                </li>
+              }
+            </ul>
+            <p class="total">
+              <span>Total a pagar</span><strong>{{ c.a_pagar | precio }}</strong>
+            </p>
+            @if (c.puntos_a_ganar > 0) {
+              <p class="ganas">
+                Sumás <strong>{{ c.puntos_a_ganar }}</strong> puntos con esta compra
+              </p>
+            }
+          } @else if (cotizando()) {
+            <div class="esqueleto" style="height: 120px"></div>
+          }
+          @if (errorCotizacion()) {
+            <p class="aviso aviso--error">{{ errorCotizacion() }}</p>
+          }
+        }
+
+        <div class="resumen__acciones">
+          @switch (paso()) {
+            @case (1) {
+              <button
+                type="button"
+                class="btn btn--primario btn--bloque"
+                [disabled]="!butacas().length"
+                (click)="irA(2)"
+              >
+                Continuar · {{ butacas().length }}
+                {{ butacas().length === 1 ? 'butaca' : 'butacas' }}
+              </button>
+            }
+            @case (2) {
+              <button type="button" class="btn btn--primario btn--bloque" (click)="irA(3)">
+                {{ hayCandy() ? 'Ir al pago' : 'Seguir sin candy' }}
+              </button>
+              <button type="button" class="btn btn--fantasma btn--bloque" (click)="irA(1)">
+                Volver a butacas
+              </button>
+            }
+            @case (3) {
+              <button
+                type="button"
+                class="btn btn--primario btn--bloque"
+                [disabled]="!cotizacion() || !!errorCotizacion() || confirmando() || cotizando()"
+                (click)="confirmar()"
+              >
+                {{
+                  confirmando()
+                    ? 'Procesando…'
+                    : cotizacion()?.a_pagar
+                      ? 'Pagar ' + (cotizacion()!.a_pagar | precio)
+                      : 'Confirmar'
+                }}
+              </button>
+              <button type="button" class="btn btn--fantasma btn--bloque" (click)="irA(2)">
+                Volver
+              </button>
+            }
+          }
+        </div>
+      </div>
+    </aside>
+  </div>
+}

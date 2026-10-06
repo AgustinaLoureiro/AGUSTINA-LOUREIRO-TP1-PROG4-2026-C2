@@ -1,0 +1,125 @@
+.salas > .adm-panel {
+  margin-top: 0;
+}
+
+.salas {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.sala {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.sala--elegida {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.sala__nombre {
+  flex: 1;
+  display: grid;
+  padding: 0.45rem 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sala__nombre small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.nueva {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.nueva .adm-panel__titulo {
+  margin: 0;
+}
+
+/* "Sala" queda fijo; solo se escribe el número */
+.nueva__nombre {
+  display: flex;
+  align-items: stretch;
+}
+
+.nueva__prefijo {
+  display: flex;
+  align-items: center;
+  padding: 0 0.7rem;
+  border: 1px solid var(--line);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.nueva__nombre .input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 0 8px 8px 0;
+}
+
+/* El plano se muestra con los colores de la sala real (oscuro) */
+.mapa-oscuro {
+  --surface-2: #2d1d13;
+  --line: #4a3020;
+  --bg: #120c08;
+  --muted: #a88b68;
+  --ink-soft: #dcc7a4;
+  --vip: #f0b44c;
+  --accesible: #4fa3e3;
+  --error: #ff6b5b;
+  margin-top: 0.75rem;
+  padding: 1rem 0.5rem;
+  border-radius: var(--radius);
+  background: #120c08;
+}
+
+@media (max-width: 900px) {
+  .salas {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sala-titulo {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.formatos-sala {
+  margin: 1rem 0 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.formatos-sala .segmentado button:disabled[aria-pressed='true'] {
+  opacity: 1;
+  cursor: default;
+}
+
+.sala__detalle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sala__detalle .badge {
+  padding: 0 0.35rem;
+  font-size: 0.65rem;
+}

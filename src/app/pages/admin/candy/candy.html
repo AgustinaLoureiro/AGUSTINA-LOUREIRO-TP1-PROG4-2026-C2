@@ -1,0 +1,295 @@
+<div class="adm-cabecera">
+  <div>
+    <h1>Candy bar</h1>
+    <p>Productos, categorías y combos.</p>
+  </div>
+  @switch (pestania()) {
+    @case ('productos') {
+      <button type="button" class="btn btn--primario" (click)="abrirProducto()">+ Producto</button>
+    }
+    @case ('combos') {
+      <button type="button" class="btn btn--primario" (click)="abrirCombo()">+ Combo</button>
+    }
+  }
+</div>
+
+<div class="adm-pestanias" role="tablist">
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestania() === 'productos'"
+    (click)="pestania.set('productos')"
+  >
+    Productos ({{ productos().length }})
+  </button>
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestania() === 'combos'"
+    (click)="pestania.set('combos')"
+  >
+    Combos ({{ combos().length }})
+  </button>
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestania() === 'categorias'"
+    (click)="pestania.set('categorias')"
+  >
+    Categorías ({{ categorias().length }})
+  </button>
+</div>
+
+@switch (pestania()) {
+  @case ('productos') {
+    <div class="tabla-scroll">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th class="num">Precio</th>
+            <th>Activo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of productos(); track p.id) {
+            <tr>
+              <td>
+                @if (p.imagen_url) {
+                  <img
+                    class="miniatura"
+                    style="aspect-ratio: 1"
+                    [src]="p.imagen_url"
+                    alt=""
+                    appImagenRespaldo
+                  />
+                }
+              </td>
+              <td>
+                <strong>{{ p.nombre }}</strong
+                ><br /><small class="texto-suave">{{ p.descripcion }}</small>
+              </td>
+              <td>{{ nombreCategoria().get(p.categoria_id) }}</td>
+              <td class="num">{{ p.precio | precio }}</td>
+              <td>
+                <label class="interruptor"
+                  ><input
+                    type="checkbox"
+                    [checked]="p.activo"
+                    (change)="alternarProducto(p)"
+                    [attr.aria-label]="'Activo: ' + p.nombre" /><span></span
+                ></label>
+              </td>
+              <td>
+                <div class="acciones-tabla">
+                  <button type="button" class="btn btn--chico" (click)="abrirProducto(p)">
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn--peligro btn--chico"
+                    (click)="eliminarProducto(p)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @case ('combos') {
+    <div class="adm-grilla">
+      @for (c of combos(); track c.id) {
+        <article class="adm-panel">
+          <div class="fila fila--entre">
+            <strong>{{ c.nombre }}</strong>
+            <span class="badge" [class.badge--ok]="c.activo">{{
+              c.activo ? 'Activo' : 'Inactivo'
+            }}</span>
+          </div>
+          <p class="texto-suave">1 entrada + {{ detalleCombo(c) }}</p>
+          <p class="mono" style="font-size: 1.4rem; margin: 0">{{ c.precio | precio }}</p>
+          <p class="campo__ayuda">Productos sueltos: {{ valorSuelto(c) | precio }} + entrada</p>
+          <div class="acciones-tabla" style="justify-content: flex-start">
+            <button type="button" class="btn btn--chico" (click)="abrirCombo(c)">Editar</button>
+            <button type="button" class="btn btn--peligro btn--chico" (click)="eliminarCombo(c)">
+              Eliminar
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  @case ('categorias') {
+    <div class="adm-panel" style="max-width: 560px">
+      @for (c of categorias(); track c.id) {
+        <div class="fila" style="margin-bottom: 0.5rem">
+          <input
+            #nombre
+            class="input"
+            style="flex: 1"
+            [value]="c.nombre"
+            [attr.aria-label]="'Nombre de ' + c.nombre"
+            (blur)="renombrarCategoria(c, nombre.value)"
+            (keydown.enter)="nombre.blur()"
+          />
+          <button type="button" class="btn btn--peligro btn--chico" (click)="eliminarCategoria(c)">
+            Eliminar
+          </button>
+        </div>
+      }
+      <form
+        class="fila"
+        [formGroup]="formCategoria"
+        (ngSubmit)="crearCategoria()"
+        style="margin-top: 1rem"
+      >
+        <input
+          class="input"
+          style="flex: 1"
+          placeholder="Nueva categoría"
+          formControlName="nombre"
+          aria-label="Nueva categoría"
+        />
+        <button type="submit" class="btn btn--chico">Agregar</button>
+      </form>
+    </div>
+  }
+}
+
+@if (editandoProducto() !== null) {
+  <div class="modal-admin" role="dialog" aria-label="Producto">
+    <form class="modal-admin__caja" [formGroup]="formProducto" (ngSubmit)="guardarProducto()">
+      <h2>{{ editandoProducto() === 'nuevo' ? 'Nuevo producto' : 'Editar producto' }}</h2>
+      <div class="campo">
+        <label for="p-nombre">Nombre</label>
+        <input id="p-nombre" formControlName="nombre" />
+        <app-errores-campo [control]="formProducto.controls.nombre" />
+      </div>
+      <div class="campo">
+        <label for="p-desc">Descripción</label>
+        <input id="p-desc" formControlName="descripcion" />
+      </div>
+      <div class="grilla-form">
+        <div class="campo">
+          <label for="p-cat">Categoría</label>
+          <select id="p-cat" formControlName="categoria_id">
+            @for (c of categorias(); track c.id) {
+              <option [ngValue]="c.id">{{ c.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="campo">
+          <label for="p-precio">Precio</label>
+          <input id="p-precio" type="number" appSoloNumeros min="1" formControlName="precio" />
+          <app-errores-campo [control]="formProducto.controls.precio" />
+        </div>
+      </div>
+      <div class="campo">
+        <label for="p-img">Imagen</label>
+        <div class="fila">
+          <input
+            id="p-img"
+            class="input"
+            style="flex: 1"
+            formControlName="imagen_url"
+            placeholder="URL o subí un archivo"
+          />
+          <label class="btn btn--chico"
+            >{{ subiendo() ? 'Subiendo…' : 'Subir'
+            }}<input
+              type="file"
+              hidden
+              accept="image/png,image/jpeg,image/webp"
+              (change)="subirImagen($event, 'producto')"
+          /></label>
+        </div>
+      </div>
+      <label class="check"
+        ><input type="checkbox" formControlName="activo" /> Disponible para la venta</label
+      >
+      <div class="fila" style="justify-content: flex-end; margin-top: 1.25rem">
+        <button type="button" class="btn" (click)="editandoProducto.set(null)">Cancelar</button>
+        <button type="submit" class="btn btn--primario">Guardar</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (editandoCombo() !== null) {
+  <div class="modal-admin" role="dialog" aria-label="Combo">
+    <form class="modal-admin__caja" [formGroup]="formCombo" (ngSubmit)="guardarCombo()">
+      <h2>{{ editandoCombo() === 'nuevo' ? 'Nuevo combo' : 'Editar combo' }}</h2>
+      <div class="campo">
+        <label for="c-nombre">Nombre</label>
+        <input id="c-nombre" formControlName="nombre" />
+        <app-errores-campo [control]="formCombo.controls.nombre" />
+      </div>
+      <div class="campo">
+        <label for="c-desc">Descripción visible para el cliente</label>
+        <input id="c-desc" formControlName="descripcion" />
+      </div>
+      <div class="campo">
+        <label for="c-precio">Precio fijo (incluye 1 entrada)</label>
+        <input id="c-precio" type="number" appSoloNumeros min="1" formControlName="precio" />
+        <app-errores-campo [control]="formCombo.controls.precio" />
+      </div>
+
+      <span class="campo__label">Productos incluidos</span>
+      <div formArrayName="items" class="pila" style="gap: 0.5rem; margin: 0.35rem 0 0.5rem">
+        @for (item of items.controls; track $index; let i = $index) {
+          <div class="fila" [formGroupName]="i">
+            <select
+              class="input"
+              style="flex: 1"
+              formControlName="producto_id"
+              [attr.aria-label]="'Producto ' + (i + 1)"
+            >
+              <option [ngValue]="null" disabled>Producto…</option>
+              @for (p of productos(); track p.id) {
+                <option [ngValue]="p.id">{{ p.nombre }}</option>
+              }
+            </select>
+            <input
+              class="input"
+              style="width: 80px"
+              type="number"
+              appSoloNumeros
+              min="1"
+              max="10"
+              formControlName="cantidad"
+              aria-label="Cantidad"
+            />
+            <button
+              type="button"
+              class="btn btn--chico"
+              (click)="quitarItem(i)"
+              [disabled]="items.length === 1"
+              aria-label="Quitar"
+            >
+              ×
+            </button>
+          </div>
+        }
+      </div>
+      <button type="button" class="btn btn--chico" (click)="agregarItem()">
+        + Agregar producto
+      </button>
+      <label class="check" style="margin-top: 1rem"
+        ><input type="checkbox" formControlName="activo" /> Mostrar en la compra</label
+      >
+      <div class="fila" style="justify-content: flex-end; margin-top: 1.25rem">
+        <button type="button" class="btn" (click)="editandoCombo.set(null)">Cancelar</button>
+        <button type="submit" class="btn btn--primario">Guardar</button>
+      </div>
+    </form>
+  </div>
+}

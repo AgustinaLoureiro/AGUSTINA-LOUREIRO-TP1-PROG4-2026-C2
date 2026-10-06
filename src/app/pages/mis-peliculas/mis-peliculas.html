@@ -1,0 +1,60 @@
+<section class="cabecera rayos">
+  <div class="contenedor">
+    <p class="antetitulo">Mis películas</p>
+    <h1>Tu historia en la sala</h1>
+    @if (!cargando() && vistas().length) {
+      <p class="contador">
+        <span>{{ vistas().length }}</span>
+        {{ vistas().length === 1 ? 'película vista' : 'películas vistas' }} ·
+        <span>{{ calificadas() }}</span> calificadas
+      </p>
+    }
+  </div>
+</section>
+
+<div class="contenedor">
+  @if (cargando()) {
+    <div class="grilla">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="esqueleto" style="aspect-ratio: 2/3"></div>
+      }
+    </div>
+  } @else {
+    <div class="grilla">
+      @for (v of vistas(); track v.peliculaId; let i = $index) {
+        <article class="vista">
+          <a [routerLink]="['/pelicula', v.peliculaId]" class="vista__poster">
+            <img [src]="v.poster" [alt]="'Póster de ' + v.titulo" appImagenRespaldo />
+            <span class="vista__sello">
+              {{ v.fecha | date: 'dd' }}<small>{{ v.fecha | date: 'MMM yy' }}</small>
+            </span>
+            @if (v.veces > 1) {
+              <span class="badge badge--oro vista__veces">La viste {{ v.veces }} veces</span>
+            }
+          </a>
+          <h2>{{ v.titulo }}</h2>
+          <p class="texto-suave">{{ v.sala }} · {{ v.formato }}</p>
+          <div class="vista__calificacion">
+            <app-estrellas
+              [valor]="v.calificacion"
+              [editable]="true"
+              (cambio)="calificar(v, $event)"
+            />
+            @if (!v.calificacion) {
+              <small>¡Calificala!</small>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="vacio">
+          <strong>Todavía no hay películas en tu historial.</strong>
+          <span
+            >Cuando veas una película con tu cuenta, aparece acá con su póster, la fecha y tu
+            calificación.</span
+          >
+          <a routerLink="/cartelera" class="btn btn--primario btn--chico">Elegir una película</a>
+        </div>
+      }
+    </div>
+  }
+</div>
