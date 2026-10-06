@@ -3,7 +3,7 @@
   "outputDirectory": "dist/app-cine/browser",
   "rewrites": [
     {
-      "source": "/((?!.*\.).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
