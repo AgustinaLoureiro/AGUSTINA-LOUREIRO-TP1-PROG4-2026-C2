@@ -64,6 +64,10 @@ create table public.perfiles (
   nombre           text not null default '',
   apellido         text not null default '',
   fecha_nacimiento date,
+  -- Datos que el cliente pidió recopilar en el registro (mail del 01/01)
+  tipo_sangre      text check (tipo_sangre in ('0+', '0-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-')),
+  color_ojos       text check (color_ojos in ('Marrones', 'Negros', 'Verdes', 'Azules', 'Grises', 'Miel', 'Otro')),
+  dias_vacaciones  int check (dias_vacaciones between 0 and 365),
   rol              text not null default 'cliente' check (rol in ('cliente', 'empleado', 'admin')),
   puntos           int not null default 0 check (puntos >= 0),
   credito          numeric(12, 2) not null default 0 check (credito >= 0),
@@ -97,13 +101,17 @@ $$;
 create or replace function public.crear_perfil() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.perfiles (id, email, nombre, apellido, fecha_nacimiento, rol)
+  insert into public.perfiles (id, email, nombre, apellido, fecha_nacimiento,
+                               tipo_sangre, color_ojos, dias_vacaciones, rol)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data ->> 'nombre', ''),
     coalesce(new.raw_user_meta_data ->> 'apellido', ''),
     nullif(new.raw_user_meta_data ->> 'fecha_nacimiento', '')::date,
+    nullif(new.raw_user_meta_data ->> 'tipo_sangre', ''),
+    nullif(new.raw_user_meta_data ->> 'color_ojos', ''),
+    nullif(new.raw_user_meta_data ->> 'dias_vacaciones', '')::int,
     case when lower(new.email) = 'administrador@cinecorn.com.ar' then 'admin' else 'cliente' end
   )
   on conflict (id) do nothing;
@@ -115,11 +123,15 @@ create trigger on_auth_user_created
   for each row execute function public.crear_perfil();
 
 -- Usuarios que ya existían en Auth antes de correr este script
-insert into public.perfiles (id, email, nombre, apellido, fecha_nacimiento, rol)
+insert into public.perfiles (id, email, nombre, apellido, fecha_nacimiento,
+                             tipo_sangre, color_ojos, dias_vacaciones, rol)
 select u.id, u.email,
        coalesce(u.raw_user_meta_data ->> 'nombre', ''),
        coalesce(u.raw_user_meta_data ->> 'apellido', ''),
        nullif(u.raw_user_meta_data ->> 'fecha_nacimiento', '')::date,
+       nullif(u.raw_user_meta_data ->> 'tipo_sangre', ''),
+       nullif(u.raw_user_meta_data ->> 'color_ojos', ''),
+       nullif(u.raw_user_meta_data ->> 'dias_vacaciones', '')::int,
        case when lower(u.email) = 'administrador@cinecorn.com.ar' then 'admin' else 'cliente' end
 from auth.users u
 on conflict (id) do nothing;
@@ -1081,11 +1093,14 @@ begin
       select 1 from public.compras where usuario_id = v_uid and cupon_id = v_cupon.id and estado = 'pagada') then
       raise exception 'Ya usaste el cupón %', v_cod_cupon;
     end if;
-    if v_cupon.porcentaje > v_pct then
-      v_pct := v_cupon.porcentaje;
-      v_origen := 'Cupón ' || v_cupon.codigo;
-      v_cupon_id := v_cupon.id;
+    -- Los descuentos no se suman: el cupón solo sirve si mejora el que ya se tiene
+    if v_cupon.porcentaje <= v_pct then
+      raise exception 'El cupón % (% %%) no se aplica: ya tenés un descuento mayor por % (% %%). Los descuentos no se suman.',
+        v_cod_cupon, v_cupon.porcentaje, lower(v_origen), v_pct;
     end if;
+    v_pct := v_cupon.porcentaje;
+    v_origen := 'Cupón ' || v_cupon.codigo;
+    v_cupon_id := v_cupon.id;
   end if;
 
   v_descuento := round((v_sub_ent + v_sub_candy) * v_pct / 100.0, 2);
@@ -1326,10 +1341,14 @@ end $$;
 -- ---------------------------------------------------------------------
 -- Completar el perfil (la fecha de nacimiento solo si estaba vacía)
 -- ---------------------------------------------------------------------
+drop function if exists public.completar_perfil(text, text, date);
 create or replace function public.completar_perfil(
   p_nombre           text,
   p_apellido         text,
-  p_fecha_nacimiento date default null
+  p_fecha_nacimiento date default null,
+  p_tipo_sangre      text default null,
+  p_color_ojos       text default null,
+  p_dias_vacaciones  int  default null
 ) returns void
 language plpgsql security definer set search_path = public as $$
 begin
@@ -1345,7 +1364,10 @@ begin
   update public.perfiles
   set nombre = trim(p_nombre),
       apellido = trim(p_apellido),
-      fecha_nacimiento = coalesce(fecha_nacimiento, p_fecha_nacimiento)
+      fecha_nacimiento = coalesce(fecha_nacimiento, p_fecha_nacimiento),
+      tipo_sangre = coalesce(p_tipo_sangre, tipo_sangre),
+      color_ojos = coalesce(p_color_ojos, color_ojos),
+      dias_vacaciones = coalesce(p_dias_vacaciones, dias_vacaciones)
   where id = auth.uid();
 end $$;
 
@@ -1470,6 +1492,7 @@ end $$;
 -- Una película publicada se muestra mientras tenga funciones próximas (cartelera)
 -- o mientras todavía no abrió la venta (próximamente). Si abre la venta y no tiene
 -- funciones, o ya pasó su última función, deja de mostrarse sola.
+-- Los usuarios registrados menores de 18 (o de 13) no ven las películas +18 (o +13).
 -- ---------------------------------------------------------------------
 create view public.v_peliculas as
 select p.id, p.titulo, p.sinopsis, p.duracion_min, p.poster_url, p.fondo_url, p.trailer_youtube,
@@ -1501,7 +1524,12 @@ left join lateral (
 where p.visible
   and (exists (select 1 from public.funciones f
                where f.pelicula_id = p.id and f.activa and f.inicio > now())
-       or now() < public.apertura_venta(p.fecha_estreno, p.preventa_habilitada, p.preventa_dias));
+       or now() < public.apertura_venta(p.fecha_estreno, p.preventa_habilitada, p.preventa_dias))
+  and (p.clasificacion = 'ATP'
+       or not exists (select 1 from public.perfiles pf
+                      where pf.id = auth.uid() and pf.fecha_nacimiento is not null
+                        and public.edad_en(pf.fecha_nacimiento, public.hoy_ar())
+                            < case p.clasificacion when '+18' then 18 else 13 end));
 
 -- =====================================================================
 --  SEGURIDAD: Row Level Security
@@ -1602,8 +1630,8 @@ revoke execute on function public.quitar_tanda(uuid) from public, anon;
 revoke execute on function public.ocultar_sin_funciones() from public, anon;
 revoke execute on function public.quitar_funciones(bigint, timestamptz, timestamptz) from public, anon;
 grant execute on function public.quitar_funciones(bigint, timestamptz, timestamptz) to authenticated;
-revoke execute on function public.completar_perfil(text, text, date) from public, anon;
-grant execute on function public.completar_perfil(text, text, date) to authenticated;
+revoke execute on function public.completar_perfil(text, text, date, text, text, int) from public, anon;
+grant execute on function public.completar_perfil(text, text, date, text, text, int) to authenticated;
 revoke execute on function public.asignar_rol(text, text) from public, anon;
 revoke execute on function public.validar_codigo(text, text) from public, anon;
 revoke execute on function public.cancelar_compra(uuid) from public, anon;

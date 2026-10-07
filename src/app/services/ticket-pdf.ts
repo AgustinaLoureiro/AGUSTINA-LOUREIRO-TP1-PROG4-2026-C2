@@ -1,6 +1,7 @@
 import { Service } from '@angular/core';
 import { CompraDetalle } from '../interfaces/compra';
 import { formatearCodigo } from '../pipes/codigo-pipe';
+import { cargarQr } from '../utils/qr';
 
 const COLOR = {
   fondo: [18, 12, 8] as const,
@@ -19,7 +20,7 @@ export class TicketPdf {
   async descargar(compra: CompraDetalle) {
     const [{ jsPDF }, QRCode, logo] = await Promise.all([
       import('jspdf'),
-      import('qrcode'),
+      cargarQr(),
       this.imagenComoDataUrl('/marca/isotipo-256.png'),
     ]);
 

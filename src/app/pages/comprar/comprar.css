@@ -396,3 +396,8 @@ legend {
     position: static;
   }
 }
+
+/* Cupón rechazado por la base */
+.cupon .input--error {
+  border-color: var(--error);
+}

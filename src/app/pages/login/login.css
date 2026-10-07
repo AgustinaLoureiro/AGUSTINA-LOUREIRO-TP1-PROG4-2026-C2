@@ -1,0 +1,48 @@
+/* Accesos rápidos con las cuentas de prueba (para los docentes) */
+.prueba {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.prueba__titulo {
+  margin: 0 0 0.6rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+/* Dos filas alineadas: ADMINISTRADOR y EMPLEADO arriba, los tres clientes abajo */
+.prueba__botones {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.prueba__botones .btn {
+  grid-column: span 2;
+}
+
+.prueba__botones .btn:nth-child(-n + 2) {
+  grid-column: span 3;
+}
+
+.prueba__botones .btn {
+  justify-content: center;
+  padding-inline: 0.4rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+@media (max-width: 420px) {
+  .prueba__botones {
+    grid-template-columns: 1fr;
+  }
+
+  .prueba__botones .btn,
+  .prueba__botones .btn:nth-child(-n + 2) {
+    grid-column: auto;
+  }
+}

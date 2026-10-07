@@ -1,4 +1,5 @@
 import { Component, effect, ElementRef, input, viewChild } from '@angular/core';
+import { cargarQr } from '../../utils/qr';
 
 /** Dibuja un QR en un canvas. La librería se carga recién cuando se necesita. */
 @Component({
@@ -30,7 +31,7 @@ export class CodigoQr {
     effect(async () => {
       const texto = this.texto();
       const canvas = this.lienzo().nativeElement;
-      const QRCode = await import('qrcode');
+      const QRCode = await cargarQr();
       await QRCode.toCanvas(canvas, texto, {
         width: 520,
         margin: 2,

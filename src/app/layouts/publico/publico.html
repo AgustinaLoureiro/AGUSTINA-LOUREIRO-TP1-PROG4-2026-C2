@@ -121,7 +121,10 @@
 @if (auth.perfilIncompleto()) {
   <div class="aviso-perfil" role="status">
     <div class="contenedor aviso-perfil__interior">
-      <span>Completá tu nombre y fecha de nacimiento para poder comprar todas las películas.</span>
+      <span
+        >Faltan datos en tu perfil. Completalos para seguir usando tu cuenta con todos los
+        beneficios.</span
+      >
       <a routerLink="/perfil" [queryParams]="{ tab: 'datos' }" class="btn btn--primario btn--chico"
         >Completar datos</a
       >

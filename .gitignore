@@ -49,6 +49,3 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-
-# Material personal de carga manual (no forma parte del proyecto)
-/carga-manual/

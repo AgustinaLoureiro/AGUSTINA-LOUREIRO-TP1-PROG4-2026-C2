@@ -1,7 +1,7 @@
 import { computed, inject, Service, signal } from '@angular/core';
 import { User } from '@supabase/supabase-js';
 import { Supabase } from './supabase';
-import { DatosRegistro, Perfil, Rol } from '../interfaces/usuario';
+import { DatosRegistro, Perfil, Rol, DatosPerfil } from '../interfaces/usuario';
 
 @Service()
 export class Auth {
@@ -18,7 +18,14 @@ export class Auth {
   readonly perfilIncompleto = computed(() => {
     const p = this.perfil();
     return (
-      !!p && p.rol === 'cliente' && (!p.nombre.trim() || !p.apellido.trim() || !p.fecha_nacimiento)
+      !!p &&
+      p.rol === 'cliente' &&
+      (!p.nombre.trim() ||
+        !p.apellido.trim() ||
+        !p.fecha_nacimiento ||
+        !p.tipo_sangre ||
+        !p.color_ojos ||
+        p.dias_vacaciones === null)
     );
   });
 
@@ -65,6 +72,9 @@ export class Auth {
           nombre: datos.nombre,
           apellido: datos.apellido,
           fecha_nacimiento: datos.fecha_nacimiento,
+          tipo_sangre: datos.tipo_sangre,
+          color_ojos: datos.color_ojos,
+          dias_vacaciones: datos.dias_vacaciones,
         },
       },
     });
@@ -86,11 +96,14 @@ export class Auth {
    * Actualiza nombre y apellido. La fecha de nacimiento solo se guarda si el perfil
    * no tenía (la base la ignora si ya estaba cargada).
    */
-  async actualizarDatos(nombre: string, apellido: string, fechaNacimiento: string | null = null) {
+  async actualizarDatos(d: DatosPerfil) {
     const { error } = await this.sup.Supabase.rpc('completar_perfil', {
-      p_nombre: nombre,
-      p_apellido: apellido,
-      p_fecha_nacimiento: fechaNacimiento,
+      p_nombre: d.nombre,
+      p_apellido: d.apellido,
+      p_fecha_nacimiento: d.fecha_nacimiento,
+      p_tipo_sangre: d.tipo_sangre,
+      p_color_ojos: d.color_ojos,
+      p_dias_vacaciones: d.dias_vacaciones,
     });
     if (error) throw error;
     await this.cargarPerfil();

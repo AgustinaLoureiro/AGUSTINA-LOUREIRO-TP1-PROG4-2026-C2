@@ -21,6 +21,10 @@ import { mensajeError } from '../../utils/errores';
 import { edadMaxima, fechaNoFutura, soloLetras, textoRequerido } from '../../utils/validadores';
 import { CampoFecha, fechaValida } from '../../components/campo-fecha/campo-fecha';
 import { Confirmacion } from '../../services/confirmacion';
+import {
+  DatosPersonales,
+  grupoDatosPersonales,
+} from '../../components/datos-personales/datos-personales';
 
 type Pestania = 'entradas' | 'puntos' | 'credito' | 'datos';
 
@@ -37,6 +41,7 @@ type Pestania = 'entradas' | 'puntos' | 'credito' | 'datos';
     CodigoPipe,
     PrecioPipe,
     IdiomaPipe,
+    DatosPersonales,
   ],
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',
@@ -87,6 +92,7 @@ export class Perfil implements OnInit {
       Validators.minLength(2),
       soloLetras,
     ]),
+    personales: grupoDatosPersonales(),
     // Solo se usa si el perfil todavía no tiene fecha de nacimiento.
     fechaNacimiento: this.fb.control<string | null>(null, [
       fechaValida,
@@ -99,7 +105,17 @@ export class Perfil implements OnInit {
 
   async ngOnInit() {
     const p = this.auth.perfil();
-    if (p) this.datos.patchValue({ nombre: p.nombre, apellido: p.apellido });
+    if (p) {
+      this.datos.patchValue({
+        nombre: p.nombre,
+        apellido: p.apellido,
+        personales: {
+          tipoSangre: p.tipo_sangre,
+          colorOjos: p.color_ojos,
+          diasVacaciones: p.dias_vacaciones,
+        },
+      });
+    }
     if (this.faltaFecha()) this.datos.controls.fechaNacimiento.addValidators(Validators.required);
     if (this.tab() === 'datos' || this.auth.perfilIncompleto()) {
       this.pestania.set('datos');
@@ -178,12 +194,16 @@ export class Perfil implements OnInit {
       return;
     }
     try {
-      const { nombre, apellido, fechaNacimiento } = this.datos.getRawValue();
-      await this.auth.actualizarDatos(
-        nombre.trim(),
-        apellido.trim(),
-        this.faltaFecha() ? fechaNacimiento : null,
-      );
+      const { nombre, apellido, fechaNacimiento, personales } = this.datos.getRawValue();
+      await this.auth.actualizarDatos({
+        nombre: nombre.trim(),
+        apellido: apellido.trim(),
+        fecha_nacimiento: this.faltaFecha() ? fechaNacimiento : null,
+        tipo_sangre: personales.tipoSangre,
+        color_ojos: personales.colorOjos,
+        dias_vacaciones:
+          personales.diasVacaciones === null ? null : Number(personales.diasVacaciones),
+      });
       this.datos.controls.fechaNacimiento.clearValidators();
       this.datos.controls.fechaNacimiento.updateValueAndValidity();
       this.avisos.ok('Datos actualizados.');

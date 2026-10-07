@@ -51,6 +51,22 @@
       </button>
     </form>
 
+    <div class="prueba">
+      <p class="prueba__titulo">Ingresar con una cuenta de prueba</p>
+      <div class="prueba__botones">
+        @for (c of cuentasPrueba; track c.email) {
+          <button
+            type="button"
+            class="btn btn--fantasma btn--chico"
+            [disabled]="enviando()"
+            (click)="ingresarComo(c.email, c.password)"
+          >
+            {{ c.etiqueta }}
+          </button>
+        }
+      </div>
+    </div>
+
     <p class="acceso__pie">
       ¿No tenés cuenta? <a routerLink="/registro">Registrate</a> y tu primera compra tiene
       descuento.

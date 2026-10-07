@@ -139,9 +139,13 @@ nuevo. Las RPC registran además validaciones de QR, cambios de rol, cancelacion
 El cliente se comunica por mail y algunos pedidos no tienen sentido para un cine. Se tomaron estas
 decisiones (detalle en [docs/requerimientos.md](docs/requerimientos.md)):
 
-- **Registro mínimo:** email, nombre, apellido y fecha de nacimiento. La fecha es necesaria para las
-  restricciones +13/+18 y los cupones para mayores de 50. **Tipo de sangre, color de ojos y días de
-  vacaciones no se piden**: no aportan al negocio y serían datos personales innecesarios.
+- **Registro completo según lo pedido:** email, nombre, apellido, fecha de nacimiento, tipo de sangre,
+  color de ojos y días de vacaciones por año. Tipo de sangre y color de ojos se eligen con botones
+  (sin listas largas); los datos quedan protegidos por RLS (solo los ve el propio usuario y el admin).
+- **Restricción de edad también en la cartelera:** un usuario registrado menor de 18 (o de 13) no ve
+  las películas +18 (o +13). Lo filtra la vista `v_peliculas` en la base, y la compra lo vuelve a validar.
+- **Cuentas de prueba:** en la pantalla de ingreso hay accesos para ADMINISTRADOR, EMPLEADO y CLIENTE
+  de prueba, para recorrer la app con cada rol.
 - **Pago simulado** con validación real de tarjeta (Luhn y vencimiento); solo se guardan los últimos 4 dígitos.
 - **Clasificación:** el cliente usa ATP, +13 y +18. Al importar desde TMDB, +16 y "R" se redondean a +18
   para nunca habilitar a menores.

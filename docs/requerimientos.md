@@ -12,8 +12,8 @@ qué se interpretó o descartó y por qué.
 
 | ID | Requerimiento | Origen | Estado | Resolución |
 | --- | --- | --- | --- | --- |
-| U1 | Registro de usuarios | 01/01 | 🔄 | Se piden **email, nombre, apellido, fecha de nacimiento y contraseña**. |
-| U2 | Datos: tipo de sangre, color de ojos, días de vacaciones | 01/01 | ⛔ | No tienen relación con el negocio de un cine. Pedirlos expone datos personales sensibles (el tipo de sangre es un dato de salud) sin finalidad, contrario al principio de minimización de la Ley 25.326 de Protección de Datos Personales. |
+| U1 | Registro de usuarios | 01/01 | ✅ | Se piden **email, nombre, apellido, fecha de nacimiento, tipo de sangre, color de ojos, días de vacaciones y contraseña**. |
+| U2 | Datos: tipo de sangre, color de ojos, días de vacaciones | 01/01 | ✅ | Se piden en el registro, como requisito explícito del cliente. Se eligen con botones (sin listas largas) y quedan protegidos por RLS: solo los ve el propio usuario y el administrador. |
 | U3 | Comprar sin registrarse ("anónimos") | 01/01 | ✅ | Compra como invitado indicando nombre y email. No suma puntos ni puede cancelar (no hay cuenta donde acreditar). |
 | U4 | Beneficio por registrarse: 20 % en la primera compra | 01/01 | ✅ | Se aplica solo en la primera compra del usuario. |
 | U5 | El porcentaje del cupón de primera compra es configurable | 30/01 | ✅ | Admin › Precios y beneficios. |
@@ -32,7 +32,7 @@ qué se interpretó o descartó y por qué.
 | P5 | El buscador filtra por género | 16/01 | ✅ | Filtro por uno o varios géneros (la película debe tener todos los elegidos); también por calificación. |
 | P6 | En la página principal, primero las 3 más vendidas | 16/01 | ✅ | Podio con las 3 películas en cartelera con más entradas vendidas. |
 | P7 | Restricción de edad: +18, +13 o sin restricción | 12/02 | ✅ | Clasificaciones ATP, +13 y +18. |
-| P8 | Menores no pueden comprar esas entradas | 12/02 | 🔄 | Usuarios registrados: se valida con su fecha de nacimiento (no editable). Invitados: deben declarar que todos los asistentes cumplen la edad. |
+| P8 | Menores no pueden comprar esas entradas | 12/02 | 🔄 | Usuarios registrados: se valida con su fecha de nacimiento (no editable). Invitados: deben declarar que todos los asistentes cumplen la edad. Además, un usuario registrado menor no ve en la cartelera las películas que no puede comprar. |
 | P9 | La entrada debe aclarar que debe ir un adulto | 12/02 | ✅ | Leyenda en la entrada, el PDF y la pantalla del empleado. |
 | P10 | Sección "Próximamente" con estrenos de las próximas semanas | 08/03 | ✅ | `/proximamente`. |
 | P11 | Alerta para avisar cuando salen las entradas | 08/03 | ✅ | Notificación dentro de la app (tiempo real) y Web Push si el usuario lo habilita. |

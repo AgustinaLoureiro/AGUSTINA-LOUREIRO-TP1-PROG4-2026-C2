@@ -1,0 +1,51 @@
+@let g = grupo().controls;
+<div class="campo">
+  <span class="campo__label">Tipo de sangre</span>
+  <div class="segmentado segmentado--mono" role="group" aria-label="Tipo de sangre">
+    @for (t of tiposSangre; track t) {
+      <button
+        type="button"
+        [attr.aria-pressed]="g.tipoSangre.value === t"
+        (click)="elegir(g.tipoSangre, t)"
+      >
+        {{ t }}
+      </button>
+    }
+  </div>
+  <app-errores-campo
+    [control]="g.tipoSangre"
+    [mensajes]="{ required: 'Elegí tu tipo de sangre.' }"
+  />
+</div>
+
+<div class="campo">
+  <span class="campo__label">Color de ojos</span>
+  <div class="segmentado" role="group" aria-label="Color de ojos">
+    @for (c of coloresOjos; track c) {
+      <button
+        type="button"
+        [attr.aria-pressed]="g.colorOjos.value === c"
+        (click)="elegir(g.colorOjos, c)"
+      >
+        {{ c }}
+      </button>
+    }
+  </div>
+  <app-errores-campo
+    [control]="g.colorOjos"
+    [mensajes]="{ required: 'Elegí el color de tus ojos.' }"
+  />
+</div>
+
+<div class="campo vacaciones">
+  <label for="vacaciones">Días de vacaciones por año</label>
+  <input
+    id="vacaciones"
+    type="number"
+    min="0"
+    max="365"
+    appSoloNumeros
+    [formControl]="g.diasVacaciones"
+  />
+  <app-errores-campo [control]="g.diasVacaciones" />
+</div>

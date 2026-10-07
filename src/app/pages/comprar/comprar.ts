@@ -96,6 +96,8 @@ export class Comprar implements OnInit, OnDestroy {
     }),
   });
   protected cuponIngresado = this.fb.nonNullable.control('');
+  /** Motivo por el que la base rechazó el cupón (se muestra debajo del campo). */
+  protected cuponError = signal<string | null>(null);
 
   protected readonly maxButacas = computed(() => this.config()?.max_entradas_por_compra ?? 10);
   protected edadMinima = computed(() => {
@@ -261,14 +263,27 @@ export class Comprar implements OnInit, OnDestroy {
   }
 
   // ---------- Paso 3: pago ----------
+  /** El cupón se valida en la base al cotizar: recién ahí se sabe si se aplica. */
   protected aplicarCupon() {
     const codigo = this.cuponIngresado.value.trim().toUpperCase();
-    this.cupon.set(codigo || null);
+    if (!codigo) {
+      this.cuponError.set('Ingresá un código de cupón.');
+      return;
+    }
+    this.cuponError.set(null);
+    this.cupon.set(codigo);
   }
 
   protected quitarCupon() {
     this.cupon.set(null);
+    this.cuponError.set(null);
     this.cuponIngresado.setValue('');
+  }
+
+  /** true cuando la cotización ya confirmó que el descuento viene del cupón. */
+  protected cuponConfirmado(): boolean {
+    const codigo = this.cupon();
+    return !!codigo && this.cotizacion()?.descuento_origen === 'Cupón ' + codigo;
   }
 
   protected formatearTarjeta(evento: Event) {
@@ -355,9 +370,10 @@ export class Comprar implements OnInit, OnDestroy {
     } catch (e) {
       const msg = mensajeError(e);
       this.errorCotizacion.set(msg);
+      // Cupón rechazado: se quita y se explica el motivo debajo del campo
       if (solicitud.cupon && /cup[oó]n/i.test(msg)) {
         this.cupon.set(null);
-        this.avisos.error(msg);
+        this.cuponError.set(msg);
       }
     } finally {
       this.cotizando.set(false);

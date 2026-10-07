@@ -258,9 +258,15 @@
               <legend>Cupón de descuento</legend>
               @if (cupon()) {
                 <div class="fila fila--entre">
-                  <span
-                    ><span class="badge badge--ok">{{ cupon() }}</span> aplicado</span
-                  >
+                  @if (cuponConfirmado()) {
+                    <span
+                      ><span class="badge badge--ok">{{ cupon() }}</span> aplicado (−{{
+                        cotizacion()?.descuento_porcentaje
+                      }}%)</span
+                    >
+                  } @else {
+                    <span class="texto-suave">Verificando el cupón {{ cupon() }}…</span>
+                  }
                   <button
                     type="button"
                     class="btn btn--fantasma btn--chico"
@@ -277,11 +283,16 @@
                     [formControl]="cuponIngresado"
                     aria-label="Código de cupón"
                     (keydown.enter)="$event.preventDefault(); aplicarCupon()"
+                    (input)="cuponError.set(null)"
+                    [class.input--error]="cuponError()"
                   />
                   <button type="button" class="btn btn--chico" (click)="aplicarCupon()">
                     Aplicar
                   </button>
                 </div>
+              }
+              @if (cuponError(); as error) {
+                <p class="campo__error" role="alert">Cupón incorrecto: {{ error }}</p>
               }
               @if (cotizacion()?.descuento_origen === 'Primera compra') {
                 <p class="campo__ayuda">

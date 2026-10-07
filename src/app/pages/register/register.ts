@@ -6,6 +6,10 @@ import { Catalogo } from '../../services/catalogo';
 import { Avisos } from '../../services/ui';
 import { ErroresCampo } from '../../components/errores-campo/errores-campo';
 import { CampoFecha, fechaValida } from '../../components/campo-fecha/campo-fecha';
+import {
+  DatosPersonales,
+  grupoDatosPersonales,
+} from '../../components/datos-personales/datos-personales';
 import { mensajeError } from '../../utils/errores';
 import {
   edadMaxima,
@@ -16,16 +20,14 @@ import {
 } from '../../utils/validadores';
 
 /**
- * Registro. Solo se piden los datos que el cine necesita:
- * - email y contraseña para la cuenta,
- * - nombre y apellido para la entrada,
- * - fecha de nacimiento para las restricciones de edad y los cupones para mayores de 50.
- * (Tipo de sangre, color de ojos o días de vacaciones no aportan nada al negocio
- * y serían datos personales innecesarios: se descartaron.)
+ * Registro con todos los datos que pidió el cliente: email, nombre, apellido,
+ * fecha de nacimiento, tipo de sangre, color de ojos y días de vacaciones por año.
+ * La fecha de nacimiento además se usa para las restricciones de edad y los
+ * cupones para mayores de 50.
  */
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink, ErroresCampo, CampoFecha],
+  imports: [ReactiveFormsModule, RouterLink, ErroresCampo, CampoFecha, DatosPersonales],
   templateUrl: './register.html',
   styleUrl: './register.css',
 })
@@ -58,6 +60,7 @@ export class Register implements OnInit {
       fechaNoFutura,
       edadMaxima(110),
     ]),
+    personales: grupoDatosPersonales(),
     claves: this.fb.nonNullable.group(
       {
         password: ['', [Validators.required, Validators.minLength(8), passwordFuerte]],
@@ -89,6 +92,9 @@ export class Register implements OnInit {
         apellido: v.apellido.trim(),
         email: v.email.trim().toLowerCase(),
         fecha_nacimiento: v.fechaNacimiento!,
+        tipo_sangre: v.personales.tipoSangre!,
+        color_ojos: v.personales.colorOjos!,
+        dias_vacaciones: Number(v.personales.diasVacaciones),
         password: v.claves.password,
       });
       if (requiereConfirmacion) {

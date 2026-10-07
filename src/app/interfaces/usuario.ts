@@ -1,11 +1,25 @@
 export type Rol = 'cliente' | 'empleado' | 'admin';
 
+export const TIPOS_SANGRE = ['0+', '0-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'] as const;
+export const COLORES_OJOS = [
+  'Marrones',
+  'Negros',
+  'Verdes',
+  'Azules',
+  'Grises',
+  'Miel',
+  'Otro',
+] as const;
+
 export interface Perfil {
   id: string;
   email: string;
   nombre: string;
   apellido: string;
   fecha_nacimiento: string | null;
+  tipo_sangre: string | null;
+  color_ojos: string | null;
+  dias_vacaciones: number | null;
   rol: Rol;
   puntos: number;
   credito: number;
@@ -17,7 +31,20 @@ export interface DatosRegistro {
   apellido: string;
   email: string;
   fecha_nacimiento: string;
+  tipo_sangre: string;
+  color_ojos: string;
+  dias_vacaciones: number;
   password: string;
+}
+
+/** Datos que el cliente puede completar o cambiar desde su perfil. */
+export interface DatosPerfil {
+  nombre: string;
+  apellido: string;
+  fecha_nacimiento: string | null;
+  tipo_sangre: string | null;
+  color_ojos: string | null;
+  dias_vacaciones: number | null;
 }
 
 export interface MovimientoPuntos {
