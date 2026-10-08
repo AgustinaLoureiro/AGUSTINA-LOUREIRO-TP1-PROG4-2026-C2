@@ -23,7 +23,7 @@
     <div class="grilla">
       @for (v of vistas(); track v.peliculaId; let i = $index) {
         <article class="vista">
-          <a [routerLink]="['/pelicula', v.peliculaId]" class="vista__poster">
+          <ng-template #poster>
             <img [src]="v.poster" [alt]="'Póster de ' + v.titulo" appImagenRespaldo />
             <span class="vista__sello">
               {{ v.fecha | date: 'dd' }}<small>{{ v.fecha | date: 'MMM yy' }}</small>
@@ -31,7 +31,16 @@
             @if (v.veces > 1) {
               <span class="badge badge--oro vista__veces">La viste {{ v.veces }} veces</span>
             }
-          </a>
+          </ng-template>
+          @if (v.enCartel) {
+            <a [routerLink]="['/pelicula', v.peliculaId]" class="vista__poster">
+              <ng-container [ngTemplateOutlet]="poster" />
+            </a>
+          } @else {
+            <div class="vista__poster" title="Ya no está en cartelera">
+              <ng-container [ngTemplateOutlet]="poster" />
+            </div>
+          }
           <h2>{{ v.titulo }}</h2>
           <p class="texto-suave">{{ v.sala }} · {{ v.formato }}</p>
           <div class="vista__calificacion">

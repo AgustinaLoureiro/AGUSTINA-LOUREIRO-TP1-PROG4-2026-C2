@@ -108,6 +108,9 @@
     <div class="adm-grilla">
       @for (c of combos(); track c.id) {
         <article class="adm-panel">
+          @if (c.imagen_url) {
+            <img class="combo-img" [src]="c.imagen_url" alt="" appImagenRespaldo />
+          }
           <div class="fila fila--entre">
             <strong>{{ c.nombre }}</strong>
             <span class="badge" [class.badge--ok]="c.activo">{{
@@ -241,6 +244,29 @@
         <label for="c-precio">Precio fijo (incluye 1 entrada)</label>
         <input id="c-precio" type="number" appSoloNumeros min="1" formControlName="precio" />
         <app-errores-campo [control]="formCombo.controls.precio" />
+      </div>
+      <div class="campo">
+        <label for="c-img">Imagen</label>
+        <div class="fila">
+          @if (formCombo.controls.imagen_url.value; as img) {
+            <img class="miniatura" style="aspect-ratio: 1" [src]="img" alt="" appImagenRespaldo />
+          }
+          <input
+            id="c-img"
+            class="input"
+            style="flex: 1"
+            formControlName="imagen_url"
+            placeholder="URL o subí un archivo"
+          />
+          <label class="btn btn--chico"
+            >{{ subiendo() ? 'Subiendo…' : 'Subir'
+            }}<input
+              type="file"
+              hidden
+              accept="image/png,image/jpeg,image/webp"
+              (change)="subirImagen($event, 'combo')"
+          /></label>
+        </div>
       </div>
 
       <span class="campo__label">Productos incluidos</span>

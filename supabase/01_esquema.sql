@@ -67,7 +67,7 @@ create table public.perfiles (
   -- Datos que el cliente pidió recopilar en el registro (mail del 01/01)
   tipo_sangre      text check (tipo_sangre in ('0+', '0-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-')),
   color_ojos       text check (color_ojos in ('Marrones', 'Negros', 'Verdes', 'Azules', 'Grises', 'Miel', 'Otro')),
-  dias_vacaciones  int check (dias_vacaciones between 0 and 365),
+  dias_vacaciones  int check (dias_vacaciones between 0 and 35),  -- máximo legal (LCT, art. 150)
   rol              text not null default 'cliente' check (rol in ('cliente', 'empleado', 'admin')),
   puntos           int not null default 0 check (puntos >= 0),
   credito          numeric(12, 2) not null default 0 check (credito >= 0),
@@ -318,6 +318,29 @@ begin
   select count(*) into v_cant from ocultadas;
   return v_cant;
 end $$;
+
+-- ---------------------------------------------------------------------
+-- Precio de las entradas: es el del formato. Si el admin lo cambia, se
+-- actualizan las funciones que todavía no empezaron. Las compras ya hechas
+-- no cambian: cada entrada guarda el precio que se pagó.
+-- ---------------------------------------------------------------------
+create or replace function public.formatos_despues_actualizar() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare v_log text := current_setting('cinecorn.omitir_log', true);
+begin
+  -- El cambio del formato ya queda en el registro; no se registra función por función
+  perform set_config('cinecorn.omitir_log', 'on', true);
+  update public.funciones
+  set precio = new.precio
+  where formato = new.codigo and inicio > now() and precio <> new.precio;
+  perform set_config('cinecorn.omitir_log', coalesce(v_log, 'off'), true);
+  return null;
+end $$;
+
+drop trigger if exists formatos_despues_actualizar on public.formatos;
+create trigger formatos_despues_actualizar
+  after update of precio on public.formatos
+  for each row execute function public.formatos_despues_actualizar();
 
 -- ---------------------------------------------------------------------
 -- Candy bar
@@ -655,6 +678,7 @@ end $$;
 drop function if exists public.programar_funciones(bigint, text, text, date, date, int[], text[], numeric);
 drop function if exists public.programar_funciones(bigint, text, text, date, date, int[], text[], numeric, smallint);
 drop function if exists public.programar_funciones(bigint, text, text, date, date, int[], text[], numeric, uuid);
+drop function if exists public.programar_funciones(bigint, text, text, date, date, int[], text[], uuid);
 create or replace function public.programar_funciones(
   p_pelicula_id bigint,
   p_formato     text,
@@ -663,7 +687,6 @@ create or replace function public.programar_funciones(
   p_hasta       date,
   p_dias        int[],
   p_horarios    text[],
-  p_precio      numeric default null,
   p_tanda       uuid default null
 ) returns table (horario timestamptz, sala_asignada text, resultado text)
 language plpgsql security definer set search_path = public, extensions as $$
@@ -699,7 +722,8 @@ begin
   if not found then raise exception 'La película no existe'; end if;
   select minutos_limpieza into v_limpieza from public.configuracion where id = 1;
   v_ocupa := make_interval(mins => v_peli.duracion_min + v_limpieza);
-  v_precio := coalesce(p_precio, (select precio from public.formatos where codigo = p_formato));
+  -- El precio de la entrada es el del formato (se actualiza solo si el admin lo cambia)
+  v_precio := (select precio from public.formatos where codigo = p_formato);
   if v_precio is null then raise exception 'Formato inválido'; end if;
   if not exists (select 1 from public.salas where activa and p_formato = any (formatos)) then
     raise exception 'Ninguna sala activa está equipada para %', p_formato;
@@ -1581,7 +1605,15 @@ begin
   end loop;
 end $$;
 
-create policy peliculas_lectura on public.peliculas for select using (visible or public.es_admin());
+-- Las visibles las ve cualquiera; las ocultas, el admin y quien compró entradas para ellas
+-- (así "Mis películas" muestra el historial aunque la película ya no esté en cartel).
+create or replace function public.compro_pelicula(p_pelicula bigint) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.compras c join public.funciones f on f.id = c.funcion_id
+                 where c.usuario_id = auth.uid() and f.pelicula_id = p_pelicula)
+$$;
+create policy peliculas_lectura on public.peliculas for select
+  using (visible or public.es_admin() or public.compro_pelicula(id));
 create policy peliculas_admin on public.peliculas for all
   using (public.es_admin()) with check (public.es_admin());
 
@@ -1625,7 +1657,7 @@ create policy push_propias on public.suscripciones_push for all to authenticated
 create policy actividad_admin on public.actividad for select using (public.es_admin());
 
 -- Funciones de admin/staff: no exponerlas a usuarios anónimos.
-revoke execute on function public.programar_funciones(bigint, text, text, date, date, int[], text[], numeric, uuid) from public, anon;
+revoke execute on function public.programar_funciones(bigint, text, text, date, date, int[], text[], uuid) from public, anon;
 revoke execute on function public.quitar_tanda(uuid) from public, anon;
 revoke execute on function public.ocultar_sin_funciones() from public, anon;
 revoke execute on function public.quitar_funciones(bigint, timestamptz, timestamptz) from public, anon;
@@ -1638,7 +1670,7 @@ revoke execute on function public.cancelar_compra(uuid) from public, anon;
 revoke execute on function public.reporte_facturacion(date, date) from public, anon;
 revoke execute on function public.ranking_peliculas(date, date, int) from public, anon;
 revoke execute on function public.ranking_productos(date, date) from public, anon;
-grant execute on function public.programar_funciones(bigint, text, text, date, date, int[], text[], numeric, uuid) to authenticated;
+grant execute on function public.programar_funciones(bigint, text, text, date, date, int[], text[], uuid) to authenticated;
 grant execute on function public.quitar_tanda(uuid) to authenticated;
 grant execute on function public.ocultar_sin_funciones() to authenticated;
 grant execute on function public.asignar_rol(text, text) to authenticated;

@@ -2,7 +2,7 @@ import { Component, computed, inject, input, OnInit, signal } from '@angular/cor
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminDatos } from '../../../services/admin';
 import { Avisos } from '../../../services/ui';
 import {
@@ -31,7 +31,6 @@ import { generarHorarios, HorarioGenerado } from '../../../utils/horarios';
 import { fechaNoPasada } from '../../../utils/validadores';
 import { mensajeError } from '../../../utils/errores';
 import { Confirmacion } from '../../../services/confirmacion';
-import { SoloNumeros } from '../../../directives/solo-numeros';
 
 type FuncionAgenda = Funcion & { vendidas: number };
 type Pestania = 'programar' | 'cartel' | 'agenda';
@@ -52,8 +51,6 @@ interface PeliculaEnCartel {
   tandas: Set<string>;
 }
 
-const FORMATO_PRECIO = new Intl.NumberFormat('es-AR');
-
 /** Todas las funciones empiezan dentro del mismo día: la última, antes de las 23:59. */
 const ULTIMO_INICIO = '23:59';
 
@@ -63,7 +60,6 @@ const HORAS_AGENDA = 17; // hasta las 03:00
 @Component({
   selector: 'app-admin-funciones',
   imports: [
-    SoloNumeros,
     DatePipe,
     RouterLink,
     ReactiveFormsModule,
@@ -102,8 +98,6 @@ export class AdminFunciones implements OnInit {
   protected programando = signal(false);
   protected limpieza = signal(30);
   protected pestania = signal<Pestania>('programar');
-  /** true cuando el admin escribió un precio distinto al del formato. */
-  protected precioPersonalizado = signal(false);
   protected cartel = signal<PeliculaEnCartel[]>([]);
   protected cargandoCartel = signal(false);
   protected quitando = signal<number | null>(null);
@@ -154,7 +148,6 @@ export class AdminFunciones implements OnInit {
     idioma: this.fb.control<'CAST' | 'SUBT' | null>(null, Validators.required),
     desde: this.fb.control<string | null>(null, [Validators.required, fechaValida, fechaNoPasada]),
     hasta: this.fb.control<string | null>(null, [Validators.required, fechaValida]),
-    precio: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
     // Cada franja agrupa días con la misma grilla (ej. semana vs. fin de semana)
     franjas: this.fb.array([this.nuevaFranja()]),
   });
@@ -202,10 +195,6 @@ export class AdminFunciones implements OnInit {
   protected funcionesDia = signal<FuncionAgenda[]>([]);
   protected seleccionada = signal<FuncionAgenda | null>(null);
   protected cargandoAgenda = signal(false);
-  protected precioEditado = new FormControl<number | null>(null, [
-    Validators.required,
-    Validators.min(1),
-  ]);
   protected readonly marcas = Array.from(
     { length: HORAS_AGENDA + 1 },
     (_, i) => (HORA_INICIO_AGENDA + i) % 24,
@@ -345,6 +334,7 @@ export class AdminFunciones implements OnInit {
     return this.peliculas().find((p) => p.id === Number(this.form.controls.peliculaId.value));
   }
 
+  /** El precio de la entrada es el del formato (se cambia en Precios y beneficios). */
   protected get precioFormato(): number {
     return Number(
       this.formatos().find((f) => f.codigo === this.form.controls.formato.value)?.precio ?? 0,
@@ -358,29 +348,8 @@ export class AdminFunciones implements OnInit {
       .map((s) => s.nombre);
   }
 
-  /** Al elegir el formato se propone su precio base (se puede cambiar). */
   protected elegirFormato(codigo: Formato['codigo']) {
     this.form.controls.formato.setValue(codigo);
-    if (!this.precioPersonalizado()) this.form.controls.precio.setValue(this.precioFormato);
-  }
-
-  protected get precioTexto(): string {
-    const v = this.form.controls.precio.value;
-    return v ? FORMATO_PRECIO.format(v) : '';
-  }
-
-  /** Campo de precio con separador de miles: se guarda el número, se muestra "11.500". */
-  protected escribirPrecio(evento: Event) {
-    const el = evento.target as HTMLInputElement;
-    const numero = Number(el.value.replace(/\D/g, '').slice(0, 7)) || null;
-    this.form.controls.precio.setValue(numero);
-    this.precioPersonalizado.set(numero !== this.precioFormato);
-    el.value = numero ? FORMATO_PRECIO.format(numero) : '';
-  }
-
-  protected restablecerPrecio() {
-    this.form.controls.precio.setValue(this.precioFormato);
-    this.precioPersonalizado.set(false);
   }
 
   private diasEnRango(dias: number[]): number {
@@ -431,7 +400,6 @@ export class AdminFunciones implements OnInit {
             hasta: v.hasta!,
             dias,
             horarios,
-            precio: v.precio!,
             tanda,
           })),
         );
@@ -465,7 +433,6 @@ export class AdminFunciones implements OnInit {
     if (c.peliculaId.invalid) return 'Elegí la película.';
     if (c.formato.invalid) return 'Elegí el formato.';
     if (c.idioma.invalid) return 'Elegí el idioma.';
-    if (c.precio.invalid) return 'Indicá el precio de la entrada.';
     if (c.desde.invalid || c.hasta.invalid) return 'Completá el período en cartel.';
     if (c.hasta.value! < c.desde.value!) return 'La fecha "hasta" no puede ser anterior a "desde".';
     for (let i = 0; i < this.franjas.length; i++) {
@@ -482,7 +449,6 @@ export class AdminFunciones implements OnInit {
     this.form.reset();
     this.franjas.clear();
     this.franjas.push(this.nuevaFranja());
-    this.precioPersonalizado.set(false);
   }
 
   /** Abre Programar vacío; si se indica una película (desde En cartel), ya viene elegida. */
@@ -643,20 +609,6 @@ export class AdminFunciones implements OnInit {
 
   protected seleccionar(f: FuncionAgenda) {
     this.seleccionada.set(f);
-    this.precioEditado.setValue(f.precio);
-  }
-
-  protected async guardarPrecio() {
-    const f = this.seleccionada();
-    if (!f || this.precioEditado.invalid) return;
-    try {
-      await this.admin.actualizarFuncion(f.id, { precio: Number(this.precioEditado.value) });
-      this.avisos.ok('Precio actualizado. Rige para las próximas ventas.');
-      await this.cargarAgenda();
-      this.seleccionada.set(this.funcionesDia().find((x) => x.id === f.id) ?? null);
-    } catch (e) {
-      this.avisos.error(mensajeError(e));
-    }
   }
 
   protected async alternarActiva(f: FuncionAgenda) {

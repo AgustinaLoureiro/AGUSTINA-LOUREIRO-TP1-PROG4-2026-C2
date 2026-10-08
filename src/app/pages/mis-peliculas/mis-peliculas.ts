@@ -1,5 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Auth } from '../../services/auth';
 import { Compras } from '../../services/compras';
@@ -15,6 +15,8 @@ interface PeliculaVista {
   peliculaId: number;
   titulo: string;
   poster: string | null;
+  /** Si sigue en cartel, el póster lleva al detalle; si no, el detalle ya no existe. */
+  enCartel: boolean;
   fecha: string;
   sala: string;
   formato: string;
@@ -28,7 +30,7 @@ interface PeliculaVista {
  */
 @Component({
   selector: 'app-mis-peliculas',
-  imports: [DatePipe, RouterLink, Estrellas, ImagenRespaldo],
+  imports: [DatePipe, RouterLink, Estrellas, ImagenRespaldo, NgTemplateOutlet],
   templateUrl: './mis-peliculas.html',
   styleUrl: './mis-peliculas.css',
 })
@@ -62,6 +64,7 @@ export class MisPeliculas implements OnInit {
         peliculaId: p.id,
         titulo: p.titulo,
         poster: p.poster_url,
+        enCartel: p.visible,
         fecha: c.funciones.inicio,
         sala: c.funciones.salas.nombre,
         formato: c.funciones.formato,

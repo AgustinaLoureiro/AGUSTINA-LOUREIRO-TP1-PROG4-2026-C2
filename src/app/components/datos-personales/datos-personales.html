@@ -43,9 +43,12 @@
     id="vacaciones"
     type="number"
     min="0"
-    max="365"
+    max="35"
     appSoloNumeros
     [formControl]="g.diasVacaciones"
   />
-  <app-errores-campo [control]="g.diasVacaciones" />
+  <app-errores-campo
+    [control]="g.diasVacaciones"
+    [mensajes]="{ max: 'Por ley, el máximo son 35 días por año.' }"
+  />
 </div>

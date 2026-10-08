@@ -144,6 +144,10 @@ decisiones (detalle en [docs/requerimientos.md](docs/requerimientos.md)):
   (sin listas largas); los datos quedan protegidos por RLS (solo los ve el propio usuario y el admin).
 - **Restricción de edad también en la cartelera:** un usuario registrado menor de 18 (o de 13) no ve
   las películas +18 (o +13). Lo filtra la vista `v_peliculas` en la base, y la compra lo vuelve a validar.
+- **Precio de la entrada por formato:** el precio lo define el formato (2D, 3D, 4D, 5D), no cada función.
+  Si el admin lo cambia, se actualizan solas las funciones que todavía no empezaron (trigger en la base);
+  las compras ya hechas conservan el precio pagado. Candy, combos, recargo VIP y canjes funcionan igual:
+  se cobra el valor vigente al momento de comprar.
 - **Cuentas de prueba:** en la pantalla de ingreso hay accesos para ADMINISTRADOR, EMPLEADO y CLIENTE
   de prueba, para recorrer la app con cada rol.
 - **Pago simulado** con validación real de tarjeta (Luhn y vencimiento); solo se guardan los últimos 4 dígitos.

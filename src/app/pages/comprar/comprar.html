@@ -84,6 +84,9 @@
               @for (c of combos(); track c.id) {
                 @let cant = cantCombos()[c.id] ?? 0;
                 <article class="combo" [class.combo--elegido]="cant > 0">
+                  @if (c.imagen_url) {
+                    <img class="combo__img" [src]="c.imagen_url" alt="" appImagenRespaldo />
+                  }
                   <div>
                     <p class="combo__nombre">{{ c.nombre }}</p>
                     <p class="combo__detalle">1 entrada + {{ nombresCombo(c) }}</p>

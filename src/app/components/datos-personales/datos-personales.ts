@@ -14,7 +14,8 @@ export function grupoDatosPersonales() {
       Validators.required,
       entero,
       Validators.min(0),
-      Validators.max(365),
+      // Por ley (LCT, art. 150) son entre 14 y 35 días según la antigüedad
+      Validators.max(35),
     ]),
   });
 }

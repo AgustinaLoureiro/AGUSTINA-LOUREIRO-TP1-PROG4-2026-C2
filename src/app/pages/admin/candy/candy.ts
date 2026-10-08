@@ -18,6 +18,7 @@ type Pestania = 'productos' | 'combos' | 'categorias';
   selector: 'app-admin-candy',
   imports: [SoloNumeros, ReactiveFormsModule, ErroresCampo, ImagenRespaldo, PrecioPipe],
   templateUrl: './candy.html',
+  styleUrl: './candy.css',
 })
 export class AdminCandy implements OnInit {
   private fb = inject(FormBuilder);

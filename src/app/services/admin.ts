@@ -154,7 +154,6 @@ export class AdminDatos {
     hasta: string;
     dias: number[];
     horarios: string[];
-    precio: number | null;
     tanda: string;
   }): Promise<ResultadoProgramacion[]> {
     const { data, error } = await this.db().rpc('programar_funciones', {
@@ -165,7 +164,6 @@ export class AdminDatos {
       p_hasta: p.hasta,
       p_dias: p.dias,
       p_horarios: p.horarios,
-      p_precio: p.precio,
       p_tanda: p.tanda,
     });
     if (error) throw error;

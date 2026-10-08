@@ -185,27 +185,15 @@
               />
             </div>
             <div class="campo">
-              <label for="precio">Precio de la entrada</label>
-              <div class="moneda">
-                <span aria-hidden="true">$</span>
-                <input
-                  id="precio"
-                  inputmode="numeric"
-                  autocomplete="off"
-                  [value]="precioTexto"
-                  (input)="escribirPrecio($event)"
-                />
-              </div>
-              @if (!form.controls.formato.value) {
-                <span class="campo__ayuda">Se completa con el precio del formato elegido.</span>
-              } @else if (precioPersonalizado()) {
-                <span class="campo__ayuda">
-                  Precio especial · el de {{ form.controls.formato.value }} es
-                  {{ precioFormato | precio }}
-                  <button type="button" class="link" (click)="restablecerPrecio()">Usar ese</button>
-                </span>
+              <span class="campo__label">Precio de la entrada</span>
+              @if (form.controls.formato.value; as fmt) {
+                <p class="precio-formato mono">{{ precioFormato | precio }}</p>
+                <span class="campo__ayuda"
+                  >Precio de {{ fmt }}. Se cambia en
+                  <a routerLink="/admin/fidelizacion">Precios y beneficios</a>.</span
+                >
               } @else {
-                <span class="campo__ayuda">Precio base de {{ form.controls.formato.value }}</span>
+                <span class="campo__ayuda">Es el precio del formato que elijas.</span>
               }
             </div>
           </div>
@@ -551,19 +539,7 @@
             </p>
           </div>
           <div class="detalle__acciones">
-            <div class="fila">
-              <input
-                class="input precio"
-                type="number"
-                appSoloNumeros
-                min="1"
-                [formControl]="precioEditado"
-                aria-label="Precio de esta función"
-              />
-              <button type="button" class="btn btn--chico" (click)="guardarPrecio()">
-                Guardar precio
-              </button>
-            </div>
+            <p class="texto-suave">Entrada: {{ f.precio | precio }} (precio de {{ f.formato }})</p>
             <div class="fila">
               @if (f.vendidas === 0) {
                 <button type="button" class="btn btn--chico" (click)="eliminar(f)">

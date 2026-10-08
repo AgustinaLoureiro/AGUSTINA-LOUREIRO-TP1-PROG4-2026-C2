@@ -121,7 +121,7 @@ export interface CompraResumen {
     formato: CodigoFormato;
     idioma: Idioma;
     salas: { nombre: string };
-    peliculas: { id: number; titulo: string; poster_url: string | null };
+    peliculas: { id: number; titulo: string; poster_url: string | null; visible: boolean };
   };
   entradas: { butaca: string; tipo: TipoButaca }[];
 }

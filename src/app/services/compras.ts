@@ -47,7 +47,7 @@ export class Compras {
     const { data, error } = await this.sup.Supabase.from('compras')
       .select(
         'id, codigo, estado, total, creada_en, entrada_validada_en, candy_entregado_en, ' +
-          'funciones(inicio, fin, formato, idioma, salas(nombre), peliculas(id, titulo, poster_url)), ' +
+          'funciones(inicio, fin, formato, idioma, salas(nombre), peliculas(id, titulo, poster_url, visible)), ' +
           'entradas(butaca, tipo)',
       )
       .eq('usuario_id', usuarioId)

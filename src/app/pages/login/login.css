@@ -12,19 +12,11 @@
   text-align: center;
 }
 
-/* Dos filas alineadas: ADMINISTRADOR y EMPLEADO arriba, los tres clientes abajo */
+/* Dos filas de tres botones del mismo ancho */
 .prueba__botones {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.4rem;
-}
-
-.prueba__botones .btn {
-  grid-column: span 2;
-}
-
-.prueba__botones .btn:nth-child(-n + 2) {
-  grid-column: span 3;
 }
 
 .prueba__botones .btn {
@@ -39,10 +31,5 @@
 @media (max-width: 420px) {
   .prueba__botones {
     grid-template-columns: 1fr;
-  }
-
-  .prueba__botones .btn,
-  .prueba__botones .btn:nth-child(-n + 2) {
-    grid-column: auto;
   }
 }
