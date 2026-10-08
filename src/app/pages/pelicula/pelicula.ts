@@ -72,6 +72,11 @@ export class PeliculaDetalle implements OnInit {
   });
   protected guardando = signal(false);
 
+  /** Baja a la sección de funciones de esta misma página. */
+  protected irAFunciones() {
+    document.getElementById('funciones')?.scrollIntoView({ block: 'start' });
+  }
+
   protected ventaAbierta = computed(() => {
     const p = this.pelicula();
     return !!p && p.tiene_funciones && new Date(p.venta_desde) <= new Date();

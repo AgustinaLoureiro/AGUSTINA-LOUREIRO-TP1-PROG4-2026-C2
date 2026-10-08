@@ -352,8 +352,12 @@ main {
     font-size: 1.45rem;
   }
 
+  /* Las tres rayas centradas en el círculo */
   .hamburguesa {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .solo-escritorio,

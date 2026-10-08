@@ -101,7 +101,7 @@ export class Register implements OnInit {
         this.requiereConfirmacion.set(true);
       } else {
         this.avisos.ok(`¡Te damos la bienvenida, ${v.nombre}! Tu primera compra tiene descuento.`);
-        this.router.navigateByUrl('/cartelera');
+        this.router.navigateByUrl('/');
       }
     } catch (e) {
       this.error.set(mensajeError(e));

@@ -50,6 +50,13 @@ export class LayoutPublico {
     this.panelUsuario.set(abrir);
   }
 
+  /** Abrir el menú cierra los paneles de notificaciones y de usuario (y viceversa). */
+  protected alternarMenu() {
+    const abrir = !this.menuAbierto();
+    this.cerrarTodo();
+    this.menuAbierto.set(abrir);
+  }
+
   protected cerrarTodo() {
     this.menuAbierto.set(false);
     this.panelNotis.set(false);

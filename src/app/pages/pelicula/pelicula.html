@@ -54,9 +54,9 @@
         }
 
         <div class="fila">
-          <a href="#funciones" class="btn btn--primario">{{
-            ventaAbierta() ? 'Ver funciones' : 'Ver estreno'
-          }}</a>
+          <button type="button" class="btn btn--primario" (click)="irAFunciones()">
+            {{ ventaAbierta() ? 'Ver funciones' : 'Ver estreno' }}
+          </button>
           @if (p.trailer_youtube) {
             <button type="button" class="btn btn--fantasma" (click)="verTrailer.set(true)">
               ▶ Ver tráiler

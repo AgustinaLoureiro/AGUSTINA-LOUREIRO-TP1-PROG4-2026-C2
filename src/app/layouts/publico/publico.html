@@ -2,6 +2,15 @@
 
 <header class="barra">
   <div class="contenedor barra__interior">
+    <button
+      type="button"
+      class="btn-icono hamburguesa"
+      (click)="alternarMenu()"
+      [attr.aria-expanded]="menuAbierto()"
+      aria-label="Menú"
+    >
+      <span></span><span></span><span></span>
+    </button>
     <a routerLink="/" class="marca" aria-label="CineCorn, inicio">
       <img src="/marca/isotipo-96.png" alt="" width="40" height="40" />
       <span class="marca__nombre">CINE<span>CORN</span></span>
@@ -15,7 +24,6 @@
         >Próximamente</a
       >
       @if (!auth.logueado()) {
-        <a routerLink="/ingresar" class="nav__link nav__link--movil">Ingresar</a>
         <a routerLink="/registro" class="nav__link nav__link--movil">Crear cuenta</a>
       }
     </nav>
@@ -95,21 +103,11 @@
           }
         </div>
       } @else {
-        <a routerLink="/ingresar" class="btn btn--fantasma btn--chico solo-escritorio">Ingresar</a>
+        <a routerLink="/ingresar" class="btn btn--fantasma btn--chico">Ingresar</a>
         <a routerLink="/registro" class="btn btn--primario btn--chico solo-escritorio"
           >Crear cuenta</a
         >
       }
-
-      <button
-        type="button"
-        class="btn-icono hamburguesa"
-        (click)="menuAbierto.set(!menuAbierto())"
-        [attr.aria-expanded]="menuAbierto()"
-        aria-label="Menú"
-      >
-        <span></span><span></span><span></span>
-      </button>
     </div>
   </div>
 </header>
