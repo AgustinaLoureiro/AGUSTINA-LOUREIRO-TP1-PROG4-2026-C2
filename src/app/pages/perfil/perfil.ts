@@ -213,6 +213,21 @@ export class Perfil implements OnInit {
     }
   }
 
+  protected probando = signal(false);
+
+  /** Manda una notificación de prueba a este usuario (campanita y, si está activo, push). */
+  protected async probarNotificacion() {
+    this.probando.set(true);
+    try {
+      await this.notis.probar();
+      this.avisos.ok('Notificación enviada: tiene que llegar en unos segundos.');
+    } catch (e) {
+      this.avisos.error(mensajeError(e));
+    } finally {
+      this.probando.set(false);
+    }
+  }
+
   protected async activarPush() {
     try {
       await this.notis.suscribirPush();

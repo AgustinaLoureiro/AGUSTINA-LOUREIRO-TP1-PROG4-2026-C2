@@ -265,6 +265,28 @@ export class AdminDatos {
     return data as { eliminadas: number; con_ventas: number };
   }
 
+  /** Avisa a quienes activaron la alerta de una película si ya abrió su venta. */
+  async procesarAlertas() {
+    await this.db().rpc('procesar_alertas');
+  }
+
+  /** Envía un aviso: destino = 'clientes', 'todos' o el email de un usuario. Devuelve cuántos se enviaron. */
+  async enviarNotificacion(
+    destino: string,
+    titulo: string,
+    cuerpo: string,
+    url: string,
+  ): Promise<number> {
+    const { data, error } = await this.db().rpc('enviar_notificacion', {
+      p_destino: destino,
+      p_titulo: titulo,
+      p_cuerpo: cuerpo,
+      p_url: url,
+    });
+    if (error) throw error;
+    return data as number;
+  }
+
   async actualizarFuncion(id: number, cambios: Partial<Pick<Funcion, 'precio' | 'activa'>>) {
     const { error } = await this.db().from('funciones').update(cambios).eq('id', id);
     if (error) throw error;

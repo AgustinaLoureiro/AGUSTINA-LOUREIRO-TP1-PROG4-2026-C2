@@ -3,11 +3,14 @@
     <h1>Usuarios</h1>
     <p>Personal del cine y clientes registrados.</p>
   </div>
-  @if (grupo() === 'personal') {
-    <button type="button" class="btn btn--primario" (click)="abrirAlta()">
-      + Agregar empleado
-    </button>
-  }
+  <div class="fila">
+    <button type="button" class="btn" (click)="abrirNotificar()">Enviar notificación</button>
+    @if (grupo() === 'personal') {
+      <button type="button" class="btn btn--primario" (click)="abrirAlta()">
+        + Agregar empleado
+      </button>
+    }
+  </div>
 </div>
 
 <div class="fila fila--entre barra-usuarios">
@@ -191,6 +194,76 @@
         <button type="button" class="btn" (click)="modalAlta.set(false)">Cancelar</button>
         <button type="submit" class="btn btn--primario" [disabled]="guardando()">
           {{ guardando() ? 'Guardando…' : 'Agregar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (modalNotificar()) {
+  <div class="modal-admin" role="dialog" aria-label="Enviar notificación">
+    <form class="modal-admin__caja" [formGroup]="notificacion" (ngSubmit)="enviarNotificacion()">
+      <h2>Enviar notificación</h2>
+      <p class="campo__ayuda" style="margin: -0.5rem 0 1rem">
+        Llega al instante a la campanita de la app y, en los dispositivos que activaron los avisos,
+        como notificación del celular o la computadora.
+      </p>
+      @let n = notificacion.controls;
+      <div class="campo">
+        <span class="campo__label">Para</span>
+        <div class="segmentado segmentado--lleno" role="group" aria-label="Destinatarios">
+          @for (
+            d of [
+              ['clientes', 'Todos los clientes'],
+              ['email', 'Un usuario'],
+              ['yo', 'Solo a mí'],
+            ];
+            track d[0]
+          ) {
+            <button
+              type="button"
+              [attr.aria-pressed]="n.destino.value === d[0]"
+              (click)="n.destino.setValue($any(d[0]))"
+            >
+              {{ d[1] }}
+            </button>
+          }
+        </div>
+      </div>
+      @if (n.destino.value === 'email') {
+        <div class="campo">
+          <label for="n-email">Email del usuario</label>
+          <input id="n-email" type="email" formControlName="email" autocomplete="off" />
+        </div>
+      }
+      <div class="campo">
+        <label for="n-titulo">Título</label>
+        <input id="n-titulo" formControlName="titulo" maxlength="60" />
+        <app-errores-campo [control]="n.titulo" />
+      </div>
+      <div class="campo">
+        <label for="n-cuerpo">Mensaje</label>
+        <textarea id="n-cuerpo" rows="3" formControlName="cuerpo" maxlength="160"></textarea>
+        <app-errores-campo [control]="n.cuerpo" />
+      </div>
+      <div class="campo">
+        <span class="campo__label">Al tocarla, abre</span>
+        <div class="segmentado segmentado--lleno" role="group" aria-label="Página que abre">
+          @for (e of enlaces; track e[0]) {
+            <button
+              type="button"
+              [attr.aria-pressed]="n.url.value === e[0]"
+              (click)="n.url.setValue(e[0])"
+            >
+              {{ e[1] }}
+            </button>
+          }
+        </div>
+      </div>
+      <div class="fila" style="justify-content: flex-end; margin-top: 0.5rem">
+        <button type="button" class="btn" (click)="modalNotificar.set(false)">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="enviando()">
+          {{ enviando() ? 'Enviando…' : 'Enviar' }}
         </button>
       </div>
     </form>

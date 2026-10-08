@@ -23,6 +23,8 @@ export class Notificaciones {
   readonly alertas = signal<ReadonlySet<number>>(new Set());
   readonly noLeidas = computed(() => this.lista().filter((n) => !n.leida).length);
   readonly pushDisponible = this.swPush.isEnabled && !!environment.VAPID_PUBLIC_KEY;
+  /** true si este navegador ya está suscripto a las notificaciones push. */
+  readonly suscripto = signal(false);
 
   private canal?: RealtimeChannel;
 
@@ -57,6 +59,8 @@ export class Notificaciones {
         )
         .subscribe();
     });
+
+    this.swPush.subscription.subscribe((s) => this.suscripto.set(!!s));
 
     // Al tocar una notificación push, abrir la película correspondiente.
     this.swPush.notificationClicks.subscribe(({ notification }) => {
@@ -113,11 +117,19 @@ export class Notificaciones {
       serverPublicKey: environment.VAPID_PUBLIC_KEY,
     });
     const json = suscripcion.toJSON();
-    const { error } = await this.sup.Supabase.from('suscripciones_push').upsert(
-      { endpoint: json.endpoint, p256dh: json.keys?.['p256dh'], auth: json.keys?.['auth'] },
-      { onConflict: 'endpoint' },
-    );
+    // La base guarda el dispositivo a nombre de la cuenta actual (aunque antes lo usara otra)
+    const { error } = await this.sup.Supabase.rpc('registrar_suscripcion', {
+      p_endpoint: json.endpoint,
+      p_p256dh: json.keys?.['p256dh'],
+      p_auth: json.keys?.['auth'],
+    });
     if (error) throw error;
     return true;
+  }
+
+  /** Se manda una notificación a sí mismo: llega a la campanita y, si está suscripto, como push. */
+  async probar() {
+    const { error } = await this.sup.Supabase.rpc('probar_notificacion');
+    if (error) throw error;
   }
 }

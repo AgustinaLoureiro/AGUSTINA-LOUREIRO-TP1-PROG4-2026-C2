@@ -272,15 +272,27 @@
               Alertas activas: <strong>{{ notis.alertas().size }}</strong>
             </p>
             @if (notis.pushDisponible) {
-              <button type="button" class="btn" (click)="activarPush()">
-                Recibir avisos en este dispositivo
-              </button>
+              @if (notis.suscripto()) {
+                <p class="push-activo">✓ Este dispositivo recibe avisos</p>
+              } @else {
+                <button type="button" class="btn" (click)="activarPush()">
+                  Recibir avisos en este dispositivo
+                </button>
+              }
             } @else {
               <p class="campo__ayuda">
                 Los avisos llegan dentro de la app (campanita). Instalá CineCorn como app para
                 recibirlos también fuera del navegador.
               </p>
             }
+            <button
+              type="button"
+              class="btn btn--fantasma btn--chico probar-push"
+              [disabled]="probando()"
+              (click)="probarNotificacion()"
+            >
+              {{ probando() ? 'Enviando…' : 'Probar notificación' }}
+            </button>
           </div>
         </div>
       }

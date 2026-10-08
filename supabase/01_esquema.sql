@@ -820,6 +820,8 @@ begin
   end if;
 
   perform set_config('cinecorn.omitir_log', 'off', true);
+  -- Si abrió la venta de una película con alertas, se avisa ahora (no hace falta esperar)
+  perform public.procesar_alertas();
   perform public.log_actividad('programar', 'funciones', p_pelicula_id::text, v_peli.titulo,
     jsonb_build_object('formato', p_formato, 'idioma', p_idioma, 'desde', p_desde, 'hasta', p_hasta,
                        'dias', p_dias, 'horarios', p_horarios, 'precio', v_precio,
@@ -1445,6 +1447,55 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- Notificaciones push
+-- ---------------------------------------------------------------------
+-- Guarda el dispositivo del usuario para recibir push. Si ese navegador ya
+-- estaba registrado con otra cuenta (ej. un celular compartido), pasa a esta.
+create or replace function public.registrar_suscripcion(p_endpoint text, p_p256dh text, p_auth text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Iniciá sesión para recibir notificaciones'; end if;
+  insert into public.suscripciones_push (usuario_id, endpoint, p256dh, auth)
+  values (auth.uid(), p_endpoint, p_p256dh, p_auth)
+  on conflict (endpoint) do update
+    set usuario_id = excluded.usuario_id, p256dh = excluded.p256dh, auth = excluded.auth, creada_en = now();
+end $$;
+
+-- El usuario se manda una notificación a sí mismo para probar su dispositivo.
+create or replace function public.probar_notificacion() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Iniciá sesión para probar las notificaciones'; end if;
+  insert into public.notificaciones (usuario_id, titulo, cuerpo, url)
+  values (auth.uid(), '🍿 Notificación de prueba', 'Si ves este aviso, las notificaciones de CineCorn funcionan en este dispositivo.', '/perfil');
+end $$;
+
+-- El admin envía un aviso: a todos los clientes, a todos los usuarios o a un email.
+-- Cada fila nueva en notificaciones llega por Realtime (campanita) y por push.
+create or replace function public.enviar_notificacion(p_destino text, p_titulo text, p_cuerpo text, p_url text default '/')
+returns int language plpgsql security definer set search_path = public as $$
+declare v_cant int;
+begin
+  if not public.es_admin() then raise exception 'Solo un administrador puede enviar notificaciones'; end if;
+  if length(trim(coalesce(p_titulo, ''))) < 3 or length(trim(coalesce(p_cuerpo, ''))) < 3 then
+    raise exception 'Completá el título y el mensaje';
+  end if;
+  insert into public.notificaciones (usuario_id, titulo, cuerpo, url)
+  select p.id, trim(p_titulo), trim(p_cuerpo), coalesce(nullif(trim(p_url), ''), '/')
+  from public.perfiles p
+  where case p_destino
+          when 'clientes' then p.rol = 'cliente'
+          when 'todos' then true
+          else lower(p.email) = lower(trim(p_destino))
+        end;
+  get diagnostics v_cant = row_count;
+  if v_cant = 0 then raise exception 'No hay ningún usuario con ese email'; end if;
+  perform public.log_actividad('notificar', 'notificaciones', null, p_titulo,
+    jsonb_build_object('destino', p_destino, 'mensaje', p_cuerpo, 'enviadas', v_cant));
+  return v_cant;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- Reportes (solo admin)
 -- ---------------------------------------------------------------------
 create or replace function public.reporte_facturacion(p_desde date, p_hasta date)
@@ -1660,6 +1711,9 @@ create policy actividad_admin on public.actividad for select using (public.es_ad
 revoke execute on function public.programar_funciones(bigint, text, text, date, date, int[], text[], uuid) from public, anon;
 revoke execute on function public.quitar_tanda(uuid) from public, anon;
 revoke execute on function public.ocultar_sin_funciones() from public, anon;
+revoke execute on function public.registrar_suscripcion(text, text, text) from public, anon;
+revoke execute on function public.probar_notificacion() from public, anon;
+revoke execute on function public.enviar_notificacion(text, text, text, text) from public, anon;
 revoke execute on function public.quitar_funciones(bigint, timestamptz, timestamptz) from public, anon;
 grant execute on function public.quitar_funciones(bigint, timestamptz, timestamptz) to authenticated;
 revoke execute on function public.completar_perfil(text, text, date, text, text, int) from public, anon;
@@ -1673,6 +1727,9 @@ revoke execute on function public.ranking_productos(date, date) from public, ano
 grant execute on function public.programar_funciones(bigint, text, text, date, date, int[], text[], uuid) to authenticated;
 grant execute on function public.quitar_tanda(uuid) to authenticated;
 grant execute on function public.ocultar_sin_funciones() to authenticated;
+grant execute on function public.registrar_suscripcion(text, text, text) to authenticated;
+grant execute on function public.probar_notificacion() to authenticated;
+grant execute on function public.enviar_notificacion(text, text, text, text) to authenticated;
 grant execute on function public.asignar_rol(text, text) to authenticated;
 grant execute on function public.validar_codigo(text, text) to authenticated;
 grant execute on function public.cancelar_compra(uuid) to authenticated;

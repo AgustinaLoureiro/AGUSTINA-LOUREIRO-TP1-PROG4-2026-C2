@@ -14,6 +14,7 @@ import { passwordFuerte, soloLetras } from '../../../utils/validadores';
 import { Confirmacion } from '../../../services/confirmacion';
 
 type Grupo = 'personal' | 'clientes';
+type Destino = 'clientes' | 'yo' | 'email';
 
 @Component({
   selector: 'app-admin-usuarios',
@@ -34,6 +35,29 @@ export class AdminUsuarios implements OnInit {
   protected modalAlta = signal(false);
   protected guardando = signal(false);
   protected busqueda = new FormControl('', { nonNullable: true });
+
+  // ---------- Enviar notificación ----------
+  protected modalNotificar = signal(false);
+  protected enviando = signal(false);
+  protected readonly enlaces: [string, string][] = [
+    ['/', 'Inicio'],
+    ['/cartelera', 'Cartelera'],
+    ['/proximamente', 'Próximamente'],
+    ['/perfil', 'Mis entradas'],
+  ];
+  protected notificacion = this.fb.nonNullable.group({
+    destino: ['clientes' as Destino],
+    email: [''],
+    titulo: [
+      '🎬 ¡Nuevos estrenos en CineCorn!',
+      [Validators.required, Validators.minLength(3), Validators.maxLength(60)],
+    ],
+    cuerpo: [
+      'Ya están a la venta las entradas de los estrenos de esta semana. ¡Te esperamos!',
+      [Validators.required, Validators.minLength(3), Validators.maxLength(160)],
+    ],
+    url: ['/cartelera'],
+  });
 
   protected alta = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2), soloLetras]],
@@ -99,6 +123,41 @@ export class AdminUsuarios implements OnInit {
       this.avisos.error(mensajeError(e));
     } finally {
       this.guardando.set(false);
+    }
+  }
+
+  protected abrirNotificar(email = '') {
+    this.notificacion.patchValue({ destino: email ? 'email' : 'clientes', email });
+    this.modalNotificar.set(true);
+  }
+
+  /** El aviso llega al instante a la campanita (Realtime) y como push a los dispositivos suscriptos. */
+  protected async enviarNotificacion() {
+    const v = this.notificacion.getRawValue();
+    const email = v.email.trim();
+    if (this.notificacion.invalid || (v.destino === 'email' && !email.includes('@'))) {
+      this.notificacion.markAllAsTouched();
+      if (v.destino === 'email' && !email.includes('@'))
+        this.avisos.error('Ingresá el email del usuario.');
+      return;
+    }
+    const destino =
+      v.destino === 'yo'
+        ? (this.auth.perfil()?.email ?? '')
+        : v.destino === 'email'
+          ? email
+          : 'clientes';
+    this.enviando.set(true);
+    try {
+      const cantidad = await this.admin.enviarNotificacion(destino, v.titulo, v.cuerpo, v.url);
+      this.avisos.ok(
+        cantidad === 1 ? 'Notificación enviada.' : `Notificación enviada a ${cantidad} usuarios.`,
+      );
+      this.modalNotificar.set(false);
+    } catch (e) {
+      this.avisos.error(mensajeError(e));
+    } finally {
+      this.enviando.set(false);
     }
   }
 

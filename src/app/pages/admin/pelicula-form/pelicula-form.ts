@@ -231,6 +231,8 @@ export class PeliculaForm implements OnInit {
         [...this.generosElegidos()],
         Number(this.id()) || undefined,
       );
+      // Si con este cambio abrió la venta (ej. se habilitó la preventa), se avisa a quienes tenían alerta
+      this.admin.procesarAlertas().catch(() => undefined);
       this.avisos.ok('Película guardada.');
       this.router.navigateByUrl('/admin/peliculas');
     } catch (e) {

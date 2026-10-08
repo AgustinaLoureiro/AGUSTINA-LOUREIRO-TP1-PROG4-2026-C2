@@ -4,13 +4,13 @@
 // Despliegue:
 //   1. npx web-push generate-vapid-keys   → par de claves VAPID
 //   2. Supabase > Edge Functions > Secrets: VAPID_PUBLIC, VAPID_SECRET, VAPID_MAIL
-//   3. supabase functions deploy notificar-push
+//   3. Supabase > Edge Functions > Deploy a new function > Via editor (pegar este archivo)
 //   4. Supabase > Database > Webhooks: tabla notificaciones, evento INSERT,
 //      tipo "Supabase Edge Functions" → notificar-push
 //   5. En Vercel: VAPID_PUBLIC_KEY con la clave pública (la usa el front para suscribirse)
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import * as webpush from 'https://esm.sh/web-push@3.6.7';
+import webpush from 'npm:web-push@3.6.7';
 
 webpush.setVapidDetails(
   'mailto:' + Deno.env.get('VAPID_MAIL'),
@@ -18,7 +18,10 @@ webpush.setVapidDetails(
   Deno.env.get('VAPID_SECRET')!,
 );
 
-const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+);
 
 interface Notificacion {
   usuario_id: string;
@@ -43,14 +46,22 @@ Deno.serve(async (req) => {
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-96x96.png',
       vibrate: [100, 50, 100],
-      data: { url: record.url ?? '/', onActionClick: { default: { operation: 'navigateLastFocusedOrOpen', url: record.url ?? '/' } } },
+      data: {
+        url: record.url ?? '/',
+        onActionClick: {
+          default: { operation: 'navigateLastFocusedOrOpen', url: record.url ?? '/' },
+        },
+      },
     },
   });
 
   let enviadas = 0;
   for (const s of suscripciones ?? []) {
     try {
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload);
+      await webpush.sendNotification(
+        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+        payload,
+      );
       enviadas++;
     } catch (e) {
       // 404/410: la suscripción ya no existe (el usuario desinstaló o revocó el permiso)
@@ -60,5 +71,7 @@ Deno.serve(async (req) => {
       }
     }
   }
-  return new Response(JSON.stringify({ enviadas }), { headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify({ enviadas }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
 });

@@ -225,3 +225,13 @@
   font-size: 1.2rem;
   letter-spacing: 0.08em;
 }
+
+.push-activo {
+  margin: 0 0 0.5rem;
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.probar-push {
+  margin-top: 0.75rem;
+}
